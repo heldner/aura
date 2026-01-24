@@ -4,23 +4,21 @@ import { CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { JitUiRequest } from '@/lib/aura/negotiation/v1/negotiation_pb'
 
-interface JITManifest {
-  template: string;
-  context: Record<string, string>;
-}
+// Using proto-generated JitUiRequest type
 
 export function JITRenderer({ 
   manifest, 
   onApprove, 
   onReject 
 }: { 
-  manifest: JITManifest, 
+  manifest: JitUiRequest, 
   onApprove: () => void, 
   onReject: () => void 
 }) {
   const renderTemplate = () => {
-    switch (manifest.template) {
+    switch (manifest.templateId) {
       case 'high_value_confirm':
         return renderHighValueConfirm()
       default:
@@ -29,7 +27,7 @@ export function JITRenderer({
   }
 
   const renderHighValueConfirm = () => {
-    const context = manifest.context || {}
+    const context = manifest.contextData || {}
     
     return (
       <Card className="bg-card-bg border-2 border-cyberpunk-purple">
@@ -42,20 +40,20 @@ export function JITRenderer({
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">Item:</span>
               <Badge variant="secondary" className="bg-gray-700">
-                {context.item_name || 'Unknown Item'}
+                {manifest.contextData?.item_name || 'Unknown Item'}
               </Badge>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">Amount:</span>
               <Badge variant="secondary" className="bg-gray-700">
-                ${context.price || 'N/A'}
+                ${manifest.contextData?.price || 'N/A'}
               </Badge>
             </div>
-            {context.item_id && (
+            {manifest.contextData?.id && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-300">Item ID:</span>
                 <Badge variant="secondary" className="bg-gray-700">
-                  {context.item_id}
+                  {manifest.contextData.id}
                 </Badge>
               </div>
             )}
@@ -93,13 +91,13 @@ export function JITRenderer({
       <Card className="bg-card-bg border border-gray-600">
         <CardHeader>
           <CardTitle className="text-cyberpunk-blue">Just-In-Time Decision</CardTitle>
-          <CardDescription>Template: {manifest.template}</CardDescription>
+          <CardDescription>Template: {manifest.templateId}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="p-3 bg-blue-900/20 border border-blue-700 rounded-md">
             <p className="text-sm text-blue-400">Context Data:</p>
             <pre className="text-xs text-gray-300 mt-2 overflow-x-auto">
-              {JSON.stringify(manifest.context, null, 2)}
+              {JSON.stringify(manifest.contextData, null, 2)}
             </pre>
           </div>
         </CardContent>

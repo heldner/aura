@@ -1,13 +1,6 @@
 import nacl from 'tweetnacl'
 import { encode as encodeBase64 } from 'js-base64'
-
-interface SearchResult {
-  item_id: string;
-  name: string;
-  base_price: number;
-  similarity_score: number;
-  description_snippet: string;
-}
+import { SearchResultItem, SearchResponse, NegotiateRequest, NegotiateResponse } from './aura/negotiation/v1/negotiation_pb'
 
 export class BrowserAgentWallet {
   private keyPair: nacl.SignKeyPair
@@ -100,7 +93,7 @@ export class BrowserAgentWallet {
   /**
    * Search for items using the API
    */
-  async search(query: string, limit: number = 3): Promise<{results: SearchResult[]}> {
+  async search(query: string, limit: number = 3): Promise<SearchResponse> {
     const response = await this.fetchWithAuth('/search', 'POST', {
       query,
       limit
@@ -111,24 +104,17 @@ export class BrowserAgentWallet {
   /**
    * Submit a negotiation request
    */
-  async negotiate(itemId: string, bidAmount: number, currency: string = 'USD'): Promise<{
-    status: string;
-    data?: {
-      final_price?: number;
-      reservation_code?: string;
-      proposed_price?: number;
-      message?: string;
-    };
-    action_required?: {
-      template: string;
-      context: Record<string, string>;
-    };
-  }> {
+  async negotiate(itemId: string, bidAmount: number, currency: string = 'USD'): Promise<NegotiateResponse> {
     const response = await this.fetchWithAuth('/negotiate', 'POST', {
+      request_id: `req_${Date.now()}`,
       item_id: itemId,
       bid_amount: bidAmount,
-      currency,
-      agent_did: this.agentId
+      currency_code: currency,
+      agent_did: this.agentId,
+      // agent: {
+      //   did: this.agentId,
+      //   reputation_score: 0.8 // Default reputation score
+      // }
     })
     return response.json()
   }
