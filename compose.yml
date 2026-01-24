@@ -1,0 +1,46 @@
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: aura_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d aura_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  core-service:
+    build:
+      context: .
+      dockerfile: core-service/Dockerfile
+    restart: on-failure
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/aura_db
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "50051:50051"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    restart: on-failure
+    environment:
+      CORE_SERVICE_HOST: core-service:50051
+    ports:
+      - "8000:8000"
+    depends_on:
+      - core-service
+
+volumes:
+  postgres_data:

@@ -1,0 +1,15 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/pyi
+    out: core-service/src/proto
+  - remote: buf.build/grpc/python:v1.76.0
+    out: core-service/src/proto
+  - remote: buf.build/protocolbuffers/python
+    out: core-service/src/proto
+
+  - remote: buf.build/protocolbuffers/pyi
+    out: api-gateway/src/proto
+  - remote: buf.build/grpc/python:v1.76.0
+    out: api-gateway/src/proto
+  - remote: buf.build/protocolbuffers/python
+    out: api-gateway/src/proto

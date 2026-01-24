@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./api-gateway/src/proto/aura/negotiation/v1"
+    ]
+}

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package aura.negotiation.v1;
+
+// Service for handling negotiations.
+service NegotiationService {
+    // RPC method for negotiating offers.
+    rpc Negotiate (NegotiateRequest) returns (NegotiateResponse) {}
+    
+    rpc Search (SearchRequest) returns (SearchResponse);
+}
+
+message NegotiateRequest {
+  string request_id = 1;      // Unique identifier for request idempotency.
+  string item_id = 2;         // Identifier of the item being negotiated.
+  double bid_amount = 3;      // The proposed bid amount.
+  string currency_code = 4;   // Currency code, e.g., "USD".
+  
+  // Metadata for the agent identity.
+  AgentIdentity agent = 5;
+}
+
+message AgentIdentity {
+  string did = 1;             // Decentralized identifier.
+  float reputation_score = 2; // Reputation score from middleware.
+}
+
+message NegotiateResponse {
+  string session_token = 1;   // Token for the negotiation session.
+  int64 valid_until_timestamp = 2; // Timestamp until the session is valid.
+
+  // Polymorphic result: either acceptance, counteroffer, rejection, or UI request.
+  oneof result {
+    OfferAccepted accepted = 3;
+    OfferCountered countered = 4;
+    OfferRejected rejected = 5;
+    JitUiRequest ui_required = 6;
+  }
+}
+
+message OfferAccepted {
+  double final_price = 1;
+  string reservation_code = 2;
+}
+
+message OfferCountered {
+  double proposed_price = 1;  // The proposed counter price.
+  string reason_code = 2;     // Machine-readable reason code, e.g., "BELOW_FLOOR_LIMIT".
+  string human_message = 3;   // Human-readable message for display.
+}
+
+message OfferRejected {
+  string reason_code = 1;     // Reason code for the rejection.
+}
+
+message JitUiRequest {
+  string template_id = 1;     // Identifier for the UI template, e.g., "high_value_confirm".
+  map<string, string> context_data = 2; // Data for rendering the UI.
+}
+
+message SearchRequest {
+  string query = 1;        // "Cheap place in Bali"
+  int32 limit = 2;         // Top N results
+  double min_similarity = 3; // Отсечка мусора (0.0 - 1.0)
+}
+
+message SearchResponse {
+  repeated SearchResultItem results = 1;
+}
+
+message SearchResultItem {
+  string item_id = 1;
+  string name = 2;
+  double base_price = 3;
+  double similarity_score = 4; // Насколько это соответствует запросу
+  string description_snippet = 5; // Для контекста агенту
+}
