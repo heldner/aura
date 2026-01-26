@@ -626,7 +626,7 @@ docker-compose exec api-gateway env
 
 ## 📝 License
 
-[Add license information here]
+[This project is licensed under the MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
