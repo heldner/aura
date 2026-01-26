@@ -1,0 +1,90 @@
+global:
+  environment: local
+
+# API Gateway Service Configuration
+gateway:
+  image:
+    repository: aura-gateway # Docker image repository for the API Gateway
+    tag: latest
+    pullPolicy: IfNotPresent # Image pull policy
+  service:
+    type: LoadBalancer # Service type to expose the API Gateway
+    port: 8000
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    LOG_LEVEL: info
+
+# Core Service Configuration
+core:
+  image:
+    repository: aura-core
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 50051
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    LOG_LEVEL: info
+
+# PostgreSQL Database Configuration
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg15
+  storage: 1Gi
+  auth:
+    username: user
+    password: password
+    database: aura_db
+
+# Redis Configuration
+redis:
+  enabled: true
+  image: redis:7-alpine
+
+# Jaeger Configuration
+jaeger:
+  enabled: true
+  service:
+    type: LoadBalancer # Service type to expose Jaeger
+  # Resource limits for Jaeger
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Frontnend Configuration
+frontend:
+  image:
+    repository: aura-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 3000
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    LOG_LEVEL: info
+
+# Secrets for the application.
+# For production, it is strongly recommended to use a secret management solution
+# like Vault or External Secrets Operator instead of providing plain-text secrets here.
+secrets:
+  # API key for Mistral AI, required by the core service.
+  # This value must be provided during installation.
+  mistralApiKey: ""

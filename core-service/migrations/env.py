@@ -1,3 +1,4 @@
+import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -16,6 +17,11 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    print(f"Migrating database at: {db_url}") # Лог для отладки
+    config.set_main_option("sqlalchemy.url", db_url)
+    
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
