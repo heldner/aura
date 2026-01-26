@@ -63,6 +63,23 @@ jaeger:
       cpu: 500m
       memory: 512Mi
 
+# Frontnend Configuration
+frontend:
+  image:
+    repository: aura-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 3000
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    LOG_LEVEL: info
 
 # Secrets for the application.
 # For production, it is strongly recommended to use a secret management solution

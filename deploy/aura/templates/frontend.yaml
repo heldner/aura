@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-frontend"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "{{ .Values.frontend.env.NEXT_PUBLIC_API_URL }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-frontend"
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: frontend
