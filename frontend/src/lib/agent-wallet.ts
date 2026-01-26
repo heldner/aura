@@ -33,34 +33,31 @@ export class BrowserAgentWallet {
    * Returns SHA-256 hash as hex string to match backend format
    */
   private async hashBody(body: unknown): Promise<string> {
+    let dataToHash: Uint8Array;
+
     if (!body) {
-      // Empty body hash
-      const emptyHash = await crypto.subtle.digest('SHA-256', new Uint8Array(0))
-      return Array.from(new Uint8Array(emptyHash))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')
+      dataToHash = new Uint8Array(0);
+    } else {
+      // Sort keys for consistent canonicalization
+      const sortedBody = typeof body === 'object' && body !== null
+        ? Object.keys(body as object).sort().reduce((acc, key) => {
+            acc[key] = (body as Record<string, unknown>)[key];
+            return acc;
+          }, {} as Record<string, unknown>)
+        : body;
+      
+      // Canonicalize JSON (sorted keys, no spaces)
+      const canonical = JSON.stringify(sortedBody);
+      const encoder = new TextEncoder();
+      dataToHash = encoder.encode(canonical);
     }
 
-    // Sort keys for consistent canonicalization
-    const sortedBody = typeof body === 'object' && body !== null
-      ? Object.keys(body as object).sort().reduce((acc, key) => {
-          acc[key] = (body as Record<string, unknown>)[key]
-          return acc
-        }, {} as Record<string, unknown>)
-      : body
-
-    // Canonicalize JSON (sorted keys, no spaces)
-    const canonical = JSON.stringify(sortedBody)
-
-    // Calculate SHA-256 hash and return as hex string
-    const encoder = new TextEncoder()
-    const data = encoder.encode(canonical)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataToHash);
 
     // Convert to hex string (matches Python hashlib.sha256().hexdigest())
     return Array.from(new Uint8Array(hashBuffer))
         .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
+        .join('');
   }
 
   /**
