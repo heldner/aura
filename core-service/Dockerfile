@@ -13,6 +13,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY core-service/src ./src
 
+COPY core-service/alembic.ini .
+COPY core-service/migrations ./migrations
+
 ENV PYTHONPATH=/app:/app/src:/app/src/proto
 
 EXPOSE 50051

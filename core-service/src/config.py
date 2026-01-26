@@ -12,10 +12,10 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str
+    DATABASE_URL: str = "sqlite:///./aura.db"
 
     # Mistral AI
-    mistral_api_key: str
+    mistral_api_key: str = ""
 
     # gRPC Server
     grpc_port: int = 50051
