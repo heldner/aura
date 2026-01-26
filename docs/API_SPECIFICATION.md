@@ -106,7 +106,7 @@ NegotiationRequest:
 ```json
 {
   "session_token": "string",
-  "status": "accepted|countered|rejected|ui_required",
+  "status": "accepted",
   "valid_until": "integer",
   "data": "object"
 }
@@ -146,7 +146,10 @@ NegotiationRequest:
 {
   "session_token": "sess_abc123",
   "status": "rejected",
-  "valid_until": 1735689600
+  "valid_until": 1735689600,
+  "data": {
+    "reason_code": "OFFER_TOO_LOW"
+  }
 }
 ```
 

@@ -171,7 +171,7 @@ POST /v1/negotiate
 ```json
 {
   "session_token": "sess_...",
-  "status": "accepted|countered|rejected|ui_required",
+  "status": "accepted",
   "valid_until": 1234567890,
   "data": {
     "final_price": 850.0,
@@ -232,4 +232,4 @@ The platform uses:
 
 ## 📄 License
 
-[Add license information here]
+This project is licensed under the [MIT License](LICENSE).

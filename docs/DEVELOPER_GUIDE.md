@@ -256,7 +256,7 @@ docker-compose exec db psql -U user -d aura_db
 4. **Commit changes**:
    ```bash
    git add .
-git commit -m "Add your feature description"
+git commit -m "feat(negotiation): add new negotiation strategy"
    ```
 
 5. **Push and create PR**:
@@ -378,7 +378,7 @@ The platform uses OpenTelemetry for metrics collection. You can integrate with:
 
 ```python
 # Generate embeddings
-from core-service.src.embeddings import generate_embedding
+from embeddings import generate_embedding
 
 query = "Luxury hotel with ocean view"
 embedding = generate_embedding(query)
@@ -469,7 +469,7 @@ def verify_signature(agent_id, timestamp, signature, body_hash):
     public_key = get_agent_public_key(agent_id)
     
     # Verify signature
-    message = f"POST/v1/negotiate{timestamp}{body_hash}"
+    message = f"{method}{path}{timestamp}{body_hash}"
     return ed25519.verify(signature, message, public_key)
 ```
 
