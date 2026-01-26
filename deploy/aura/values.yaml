@@ -56,7 +56,7 @@ redis:
 jaeger:
   enabled: true
   service:
-    type: ClusterIP # Service type to expose Jaeger
+    type: LoadBalancer # Service type to expose Jaeger
   # Resource limits for Jaeger
   resources:
     limits:
