@@ -27,6 +27,13 @@ core:
   service:
     port: 50051
   replicaCount: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
   env:
     LOG_LEVEL: info
 
@@ -44,3 +51,23 @@ postgres:
 redis:
   enabled: true
   image: redis:7-alpine
+
+# Jaeger Configuration
+jaeger:
+  enabled: true
+  service:
+    type: ClusterIP # Service type to expose Jaeger
+  # Resource limits for Jaeger
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+
+# Secrets for the application.
+# For production, it is strongly recommended to use a secret management solution
+# like Vault or External Secrets Operator instead of providing plain-text secrets here.
+secrets:
+  # API key for Mistral AI, required by the core service.
+  # This value must be provided during installation.
+  mistralApiKey: ""

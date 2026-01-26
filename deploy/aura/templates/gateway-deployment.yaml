@@ -18,6 +18,8 @@ spec:
           imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
           ports:
             - containerPort: 8000
+          resources: 
+            {{ toYaml .Values.gateway.resources | nindent 12 }}
           env:
             - name: CORE_SERVICE_HOST
               value: "{{ .Release.Name }}-core:50051"

@@ -58,9 +58,6 @@ spec:
           ports:
             - containerPort: 5432
           # Warn: For production, use PersistentVolumeClaims
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
 ---
 apiVersion: v1
 kind: Service
