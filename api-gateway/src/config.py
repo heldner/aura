@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,21 @@ class Settings(BaseSettings):
 
     # HTTP Server
     http_port: int = 8000
+
+    # OpenTelemetry Configuration
+    otel_service_name: str = "aura-gateway"
+    otel_exporter_otlp_endpoint: str = "http://jaeger:4317"
+
+    @model_validator(mode='after')
+    def validate_otel_config(self) -> 'Settings':
+        """Validate OpenTelemetry configuration."""
+        if not self.otel_service_name.strip():
+            raise ValueError("OTEL_SERVICE_NAME cannot be empty")
+
+        if not self.otel_exporter_otlp_endpoint.startswith(('http://', 'https://')):
+            raise ValueError("OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL")
+
+        return self
 
 
 @lru_cache
