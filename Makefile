@@ -12,8 +12,9 @@ lint:
 	# Python Lint
 	uv run ruff check core-service/src api-gateway/src
 	# Frontend Lint
-	cd frontend && npm run lint
+	cd frontend && bun run lint
 
+# Run tests
 test:
 	uv run pytest core-service/tests/ -v
 
@@ -48,10 +49,6 @@ push:
 install-dev:
 	# Install development dependencies
 	uv sync --group dev
-
-lint:
-	# Lint code
-	uv run ruff check .
 
 format:
 	# Format code
