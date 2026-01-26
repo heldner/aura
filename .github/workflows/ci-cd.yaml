@@ -30,6 +30,8 @@ jobs:
                   enable-cache: true
             - name: Install Buf
               uses: bufbuild/buf-setup-action@v1
+              with:
+                  github_token: ${{ github.token }}
 
             - name: Install Python Dependencies
               run: make install-dev
@@ -69,6 +71,8 @@ jobs:
 
             # Setup Buf
             - uses: bufbuild/buf-setup-action@v1
+              with:
+                  github_token: ${{ github.token }}
 
             # Build and Push Docker images
             - name: Build and Push
