@@ -89,7 +89,7 @@ export class BrowserAgentWallet {
     return {
       'X-Agent-ID': this.agentId,
       'X-Timestamp': timestamp,
-      'X-Signature': Buffer.from(signature).toString('hex')
+      'X-Signature': Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('')
     }
   }
 
