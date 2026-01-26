@@ -11,7 +11,7 @@ export class BrowserAgentWallet {
     // Generate Ed25519 key pair
     this.keyPair = nacl.sign.keyPair()
     // Create agent ID from public key (did:key format with full hex)
-    this.agentId = `did:key:${Buffer.from(this.keyPair.publicKey).toString('hex')}`
+    this.agentId = `did:key:${Array.from(this.keyPair.publicKey).map(b => b.toString(16).padStart(2, '0')).join('')}`
   }
 
   /**
