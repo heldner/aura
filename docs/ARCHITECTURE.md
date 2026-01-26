@@ -52,7 +52,13 @@ graph TD
     %% Key
     linkStyle 0,1 stroke-width:2px,fill:none,stroke:green;
     linkStyle 2 stroke-width:4px,fill:none,stroke:blue;
+    linkStyle 5,6 fill:none,stroke:purple;
 ```
+
+**Legend:**
+- 🟢 **Green links**: Client traffic (HTTP/JSON requests from external agents)
+- 🔵 **Blue links**: Internal gRPC calls (Protobuf communication between services)
+- 🟣 **Purple links**: Database operations (SQL queries to PostgreSQL)
 
 ### 1. API Gateway (The Diplomat)
 - **Tech**: Python / FastAPI / Uvicorn
