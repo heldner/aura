@@ -92,7 +92,6 @@ if __name__ == "__main__":
     # Create a wallet for all scenarios
     wallet = AgentWallet()
     print(f"🔑 Using agent wallet: {wallet.did}")
-    print(f"🔐 Private key: {wallet.private_key_hex}")
     print(f"🔑 Public key: {wallet.public_key_hex}")
 
     # 1. Жадный агент (слишком дешево)

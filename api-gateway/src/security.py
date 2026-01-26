@@ -88,7 +88,7 @@ async def verify_signature(
         public_key_hex = x_agent_id[8:]  # Remove "did:key:" prefix
         public_key_bytes = bytes.fromhex(public_key_hex)
         verify_key = nacl.signing.VerifyKey(public_key_bytes)
-    except (ValueError, nacl.exceptions.ValueError) as e:
+    except ValueError as e:
         raise HTTPException(
             status_code=401, detail=f"Invalid public key in DID: {str(e)}"
         ) from None
@@ -124,9 +124,14 @@ async def verify_signature(
             status_code=401,
             detail="Invalid signature - request may have been tampered with",
         ) from None
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid signature format. Expected a hex-encoded string.",
+        ) from None
     except Exception as e:
         raise HTTPException(
-            status_code=401, detail=f"Signature verification failed: {str(e)}"
+            status_code=500, detail=f"Signature verification failed: {str(e)}"
         ) from None
 
     # Return the verified agent DID for use in the endpoint

@@ -4,6 +4,7 @@ Agent Identity Module for Aura Platform
 Provides cryptographic key management and message signing using Ed25519.
 """
 
+import hashlib
 import json
 import time
 from typing import Any
@@ -105,8 +106,6 @@ class AgentWallet:
 
     def _hash_body(self, body_json: str) -> str:
         """Hash the request body using SHA-256."""
-        import hashlib
-
         return hashlib.sha256(body_json.encode("utf-8")).hexdigest()
 
     @staticmethod
@@ -146,7 +145,7 @@ class AgentWallet:
             return True
         except nacl.exceptions.BadSignatureError:
             return False
-        except Exception:
+        except ValueError:
             return False
 
 
@@ -162,5 +161,4 @@ def generate_test_wallet() -> AgentWallet:
     print("🔑 Generated test wallet:")
     print(f"   DID: {wallet.did}")
     print(f"   Public Key: {wallet.public_key_hex}")
-    print(f"   Private Key: {wallet.private_key_hex}")
     return wallet

@@ -4,6 +4,7 @@ Test script for Aura Platform Security Implementation
 Tests the cryptographic signature verification functionality.
 """
 
+import hashlib
 import json
 import time
 
@@ -46,7 +47,6 @@ def test_agent_wallet():
 
     # Verify the signature
     body_json = json.dumps(test_payload, sort_keys=True, separators=(",", ":"))
-    import hashlib
 
     body_hash = hashlib.sha256(body_json.encode("utf-8")).hexdigest()
     message = f"POST/v1/negotiate{x_timestamp}{body_hash}"
@@ -100,7 +100,6 @@ def test_signature_verification_flow():
 
     # Verify the signature manually (simulating what the API gateway does)
     body_json = json.dumps(test_payload, sort_keys=True, separators=(",", ":"))
-    import hashlib
 
     body_hash = hashlib.sha256(body_json.encode("utf-8")).hexdigest()
     message = f"{method}{path}{x_timestamp}{body_hash}"
@@ -182,7 +181,6 @@ def main():
         print("\n🔑 Test Wallet Information:")
         print(f"   DID: {wallet.did}")
         print(f"   Public Key: {wallet.public_key_hex}")
-        print(f"   Private Key: {wallet.private_key_hex}")
 
         print("\n💡 You can use this wallet for testing the API gateway:")
         print("   Export these keys and use them in your agent applications.")
