@@ -129,8 +129,8 @@ Example log output:
   "event": "request_started",
   "method": "POST",
   "path": "/v1/negotiate",
-  "trace_id": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p",
-  "span_id": "ab1c2d3e4f5g6h7i",
+  "trace_id": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+  "span_id": "ab1c2d3e4f5a6b7c",
   "timestamp": "2024-01-01T00:00:00.000000Z"
 }
 ```
@@ -187,6 +187,150 @@ This will:
 - **Port conflicts**: Ensure port 4317 is not used by other services
 - **Environment variables**: Verify both services have proper OTel environment variables
 - **Dependency conflicts**: Ensure all OpenTelemetry packages are compatible versions
+- **Fallback behavior**: If OTLP fails, traces are logged to console (check service logs)
+
+### Debugging Commands
+
+```bash
+# Check if Jaeger is receiving traces
+curl http://localhost:16686/api/traces
+
+# Test OTLP endpoint connectivity
+nc -zv jaeger 4317
+
+# Check service logs for telemetry errors
+docker logs aura-gateway | grep telemetry
+docker logs aura-core | grep telemetry
+
+# Verify environment variables
+docker exec aura-gateway env | grep OTEL
+docker exec aura-core env | grep OTEL
+```
+
+### Error Handling
+
+The implementation includes robust error handling:
+- **Fallback to console logging** if OTLP export fails
+- **Graceful degradation** if OpenTelemetry initialization fails
+- **Input validation** for configuration settings
+- **Safe logging context** that doesn't break if OTel is unavailable
+
+## Performance Optimization
+
+### Sampling Configuration
+
+For high-volume environments, consider adding sampling:
+
+```python
+from opentelemetry.sdk.trace import sampling
+
+# Add to init_telemetry() before creating provider
+sampler = sampling.TraceIdRatioBased(0.5)  # Sample 50% of traces
+provider = TracerProvider(resource=resource, sampler=sampler)
+```
+
+### Batch Processor Tuning
+
+Adjust batch processor settings for your workload:
+
+```python
+# Default settings (good for most cases)
+span_processor = BatchSpanProcessor(
+    otlp_exporter,
+    max_queue_size=2048,
+    schedule_delay_millis=5000,  # 5 seconds
+    max_export_batch_size=512
+)
+```
+
+### Resource Usage Monitoring
+
+Monitor OpenTelemetry resource usage:
+
+```bash
+# Check memory usage
+docker stats aura-gateway aura-core
+
+# Monitor trace export rate
+docker logs aura-gateway | grep "span processed"
+```
+
+## Advanced Configuration
+
+### Custom Span Attributes
+
+Add business context to traces:
+
+```python
+from opentelemetry import trace
+
+# In your API handlers
+tracer = trace.get_tracer(__name__)
+with tracer.start_as_current_span("custom_operation") as span:
+    span.set_attribute("user.id", user_id)
+    span.set_attribute("request.value", amount)
+    # Your business logic here
+```
+
+### Context Propagation
+
+Manual context propagation for async tasks:
+
+```python
+from opentelemetry.context import context
+from opentelemetry.trace import get_current_span
+
+# Capture current context
+current_context = context.get_current()
+
+# Use in async task
+async def background_task():
+    with context.attach(current_context):
+        # This will have the same trace context
+        span = get_current_span()
+        span.add_event("background_task_started")
+```
+
+## Security Considerations
+
+### Sensitive Data
+
+Avoid logging sensitive data in span attributes:
+
+```python
+# ❌ Bad - logs sensitive data
+span.set_attribute("user.token", api_token)
+
+# ✅ Good - use metadata or redact
+span.set_attribute("user.id", user_id)
+span.set_attribute("auth.method", "token")
+```
+
+### Network Security
+
+- Ensure OTLP endpoint uses TLS in production
+- Restrict Jaeger UI access to authorized personnel
+- Consider network policies for inter-service communication
+
+## Migration Guide
+
+### From No Tracing to OpenTelemetry
+
+1. **Start with basic instrumentation** (current implementation)
+2. **Add custom spans** for critical business operations
+3. **Implement sampling** for high-volume endpoints
+4. **Add metrics** for performance monitoring
+5. **Set up alerts** based on trace patterns
+
+### Upgrading OpenTelemetry Versions
+
+```bash
+# Check for updates
+uv add --upgrade opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+
+# Test in staging first
+# Monitor for breaking changes in instrumentation APIs
+```
 
 ## Dependencies
 

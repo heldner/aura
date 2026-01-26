@@ -28,11 +28,16 @@ def configure_logging() -> None:
 
 def add_otel_context(logger, method_name, event_dict):
     """Add OpenTelemetry context to log records."""
-    span = get_current_span()
-    if span.is_recording():
-        span_context = span.get_span_context()
-        event_dict["trace_id"] = format(span_context.trace_id, "032x")
-        event_dict["span_id"] = format(span_context.span_id, "016x")
+    try:
+        span = get_current_span()
+        if span.is_recording():
+            span_context = span.get_span_context()
+            if span_context and span_context.is_valid:
+                event_dict["trace_id"] = format(span_context.trace_id, "032x")
+                event_dict["span_id"] = format(span_context.span_id, "016x")
+    except Exception:
+        # Silently fail if OTel context is not available
+        pass
     return event_dict
 
 

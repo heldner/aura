@@ -2,7 +2,6 @@ import uuid
 
 import grpc
 from fastapi import FastAPI, Header, HTTPException, Request
-from google.protobuf.json_format import MessageToDict
 from logging_config import (
     bind_request_id,
     clear_request_context,
@@ -124,18 +123,36 @@ async def negotiate(
         )
         result_type = response.WhichOneof("result")
 
+        output = {
+            "session_token": response.session_token,
+            "status": result_type,
+            "valid_until": response.valid_until_timestamp,
+        }
+
         if result_type == "accepted":
+            output["data"] = {
+                "final_price": response.accepted.final_price,
+                "reservation_code": response.accepted.reservation_code,
+            }
             logger.info(
                 "negotiation_accepted",
                 final_price=response.accepted.final_price,
                 reservation_code=response.accepted.reservation_code,
             )
         elif result_type == "countered":
+            output["data"] = {
+                "proposed_price": response.countered.proposed_price,
+                "message": response.countered.human_message,
+            }
             logger.info(
                 "negotiation_countered",
                 proposed_price=response.countered.proposed_price,
             )
         elif result_type == "ui_required":
+            output["action_required"] = {
+                "template": response.ui_required.template_id,
+                "context": dict(response.ui_required.context_data),
+            }
             logger.info(
                 "negotiation_ui_required",
                 template_id=response.ui_required.template_id,
@@ -143,9 +160,7 @@ async def negotiate(
         elif result_type == "rejected":
             logger.info("negotiation_rejected")
 
-        return MessageToDict(
-            response, preserving_proto_field_name=False, use_integers_for_enums=False
-        )
+        return output
 
     except grpc.RpcError as e:
         logger.error(
@@ -187,10 +202,20 @@ async def search_items(payload: SearchRequestHTTP):
             method="Search",
             result_count=len(response.results),
         )
-        logger.info("search_completed", result_count=len(response.results))
-        return MessageToDict(
-            response, preserving_proto_field_name=False, use_integers_for_enums=False
-        )
+        results = [
+            {
+                "id": r.item_id,
+                "name": r.name,
+                "price": r.base_price,
+                "score": round(r.similarity_score, 4),
+                "details": r.description_snippet,
+            }
+            for r in response.results
+        ]
+
+        logger.info("search_completed", result_count=len(results))
+
+        return {"results": results}
 
     except grpc.RpcError as e:
         logger.error(
