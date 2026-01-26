@@ -21,12 +21,12 @@ graph TD
         style Gateway fill:#f9f,stroke:#333,stroke-width:2px
         
         %% The Brain
-        Core["Core Service (gRPC/Python)"]
+        Core["Core Engine (gRPC/Python)"]
         style Core fill:#bbf,stroke:#333,stroke-width:2px
         
         %% Storage Layer
-        DB[("PostgreSQL\n(pgvector)")]
-        Redis[("Redis\n(Cache & State)")]
+        DB[("PostgreSQL<br>(pgvector)")]
+        Redis[("Redis<br>(Cache & State)")]
         
         %% Observability
         Jaeger["Jaeger Tracing"]
@@ -115,15 +115,6 @@ sequenceDiagram
         Gateway-->>Agent: 200 OK (1.5s latency)
     end
 ```
-
-1. Agent POSTs to `/v1/negotiate`.
-2. Gateway converts to Protobuf `NegotiationRequest`.
-3. Core Engine fetches Item from DB (including hidden `floor_price`).
-4. Strategy evaluates the Bid:
-   - If Bid < Floor -> **Counter-Offer**.
-   - If Bid > Trigger Limit -> **JIT UI Required**.
-   - Else -> **Accept**.
-5. Response is returned to Agent.
 
 ## Key Decisions
 - **Contract-First**: All APIs defined in `proto/aura/negotiation/v1/`.
