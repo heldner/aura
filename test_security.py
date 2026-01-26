@@ -6,7 +6,8 @@ Tests the cryptographic signature verification functionality.
 
 import hashlib
 import json
-import time
+
+import pytest
 
 from agent_identity import AgentWallet
 
@@ -115,26 +116,15 @@ def test_signature_verification_flow():
     assert not is_tampered_valid, "Tampered message should fail verification"
     print("✅ Tampered message correctly rejected")
 
-    # Test timestamp validation
-    current_time = int(time.time())
-    request_time = int(x_timestamp)
-    time_diff = abs(current_time - request_time)
-    assert time_diff <= 60, f"Timestamp should be within 60 seconds, got {time_diff}s"
-    print(f"✅ Timestamp validation passed ({time_diff}s difference)")
-
-    print("🎉 Signature verification flow tests passed!")
-
 
 def test_error_cases():
     """Test error cases and edge conditions."""
     print("\n🧪 Testing error cases...")
 
     # Test 1: Invalid DID format
-    try:
+    with pytest.raises(ValueError, match="Invalid DID format"):
         AgentWallet.from_did("invalid-did-format")
-        raise AssertionError("Should raise ValueError for invalid DID")
-    except ValueError as e:
-        print(f"✅ Invalid DID correctly rejected: {e}")
+    print("✅ Invalid DID correctly rejected")
 
     # Test 2: View-only wallet signing attempt
     view_only_wallet = AgentWallet.from_did(

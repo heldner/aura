@@ -13,6 +13,9 @@ import nacl.exceptions
 import nacl.signing
 from fastapi import Header, HTTPException, Request
 
+# Configuration constants
+TIMESTAMP_TOLERANCE_SECONDS = 60  # Allow ±60 seconds for clock skew
+
 
 async def verify_signature(
     request: Request,
@@ -70,12 +73,12 @@ async def verify_signature(
         time_diff = abs(current_time - request_time)
 
         # Allow requests within ±60 seconds to account for clock skew
-        if time_diff > 60:
+        if time_diff > TIMESTAMP_TOLERANCE_SECONDS:
             raise HTTPException(
                 status_code=401,
                 detail=f"Request timestamp too old or in future. "
                 f"Current: {current_time}, Request: {request_time}, "
-                f"Difference: {time_diff}s (max 60s allowed)",
+                f"Difference: {time_diff}s (max {TIMESTAMP_TOLERANCE_SECONDS} allowed)",
             )
     except ValueError:
         raise HTTPException(
@@ -133,9 +136,10 @@ async def verify_signature(
             status_code=401,
             detail="Invalid signature format. Expected a hex-encoded string.",
         ) from None
-    except Exception as e:
+    except Exception:
         raise HTTPException(
-            status_code=500, detail=f"Signature verification failed: {str(e)}"
+            status_code=500,
+            detail="An internal error occurred during signature verification.",
         ) from None
 
     # Return the verified agent DID for use in the endpoint
