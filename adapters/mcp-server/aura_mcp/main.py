@@ -112,8 +112,8 @@ class AuraMCPServer:
             logger.error(f"🔴 Network error: {e}")
             return "❌ Search failed: Could not connect to Aura Gateway"
         except Exception as e:
-            logger.error(f"🔴 Unexpected error: {e}")
-            return f"❌ Search failed: {str(e)}"
+            logger.error(f"🔴 Unexpected error in search_hotels: {e}", exc_info=True)
+            return "❌ Search failed due to an unexpected internal error."
 
     @tool()
     async def negotiate_price(self, item_id: str, bid: float) -> str:
