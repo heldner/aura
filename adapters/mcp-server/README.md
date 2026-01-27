@@ -39,7 +39,7 @@ Add this to your Claude Desktop configuration file:
         "--with", "httpx", 
         "--with", "pynacl",
         "--with", "python-dotenv",
-        "https://github.com/YOUR_USERNAME/aura-platform/blob/main/adapters/mcp-server/src/aura_mcp/main.py" 
+        "https://github.com/zaebee/aura/blob/main/adapters/mcp-server/src/aura_mcp/main.py" 
         # Note: In a real release, you would point to a PyPI package name
       ],
       "env": {
