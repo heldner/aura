@@ -62,7 +62,7 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     environment:
-      NEXT_PUBLIC_API_GATEWAY_URL: http://api-gateway:8000
+      NEXT_PUBLIC_API_GATEWAY_URL: http://api-gateway:8000/v1
     ports:
       - "3000:3000"
     depends_on:
