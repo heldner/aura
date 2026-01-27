@@ -42,8 +42,8 @@ spec:
             - name: MISTRAL_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Values.secrets.mistralApiKey.name }}"
-                  key: "mistral-api-key"
+                  name: "{{ .Release.Name }}-secrets"
+                  key: "mistral-key"
             - name: OTEL_SERVICE_NAME
               value: "{{ .Release.Name }}-core"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
