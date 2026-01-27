@@ -23,15 +23,19 @@ spec:
           ports:
             - containerPort: 50051
           livenessProbe:
-            tcpSocket:
+            grpc:
               port: 50051
             initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
-            tcpSocket:
+            grpc:
               port: 50051
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
           resources: 
             {{ toYaml .Values.core.resources | nindent 12 }}
           env:
