@@ -5,21 +5,16 @@ This server acts as a proxy between AI models (via MCP) and the Aura Gateway,
 providing search and negotiation capabilities to LLMs like Claude 3.5 Sonnet.
 """
 
-import asyncio
 import logging
-import httpx
 import os
-import sys
 
-from typing import Any, Dict, Optional
+import httpx
 from dotenv import load_dotenv
-
 from fastmcp import FastMCP
 from fastmcp.tools import tool
 
 # Import AgentWallet from parent directory
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from agent_identity import AgentWallet
+from aura_mcp.wallet import AgentWallet
 
 # Configure logging
 logging.basicConfig(
@@ -58,8 +53,7 @@ class AuraMCPServer:
         self.client = httpx.AsyncClient(timeout=30.0)
 
         logger.info("🔑 Generated temporary agent wallet")
-        logger.info(f"   DID: {self.wallet.did}")
-        logger.info(f"   Public Key: {self.wallet.public_key_hex}")
+        logger.info(f"DID: {self.wallet.did}")
 
     @tool()
     async def search_hotels(self, query: str, limit: int = 3) -> str:
@@ -196,8 +190,12 @@ class AuraMCPServer:
             return f"❌ Negotiation failed: {str(e)}"
 
 
-if __name__ == "__main__":
+def main():
     server = AuraMCPServer()
     mcp.add_tool(server.search_hotels)
     mcp.add_tool(server.negotiate_price)
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
