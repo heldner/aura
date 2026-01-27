@@ -2,6 +2,7 @@ import uuid
 
 import grpc
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from grpc_health.v1 import health_pb2_grpc
 from logging_config import (
     bind_request_id,
     clear_request_context,
@@ -20,6 +21,7 @@ from proto.aura.negotiation.v1 import (
     negotiation_pb2,  # type: ignore
     negotiation_pb2_grpc,  # type: ignore
 )
+from src.health import register_health_endpoints
 from src.security import verify_signature
 
 # Configure structured logging on startup
@@ -37,10 +39,16 @@ logger.info(
     endpoint=settings.otel_exporter_otlp_endpoint,
 )
 
+# Parse CORS origins from settings (comma-separated string to list)
+origins = [
+    origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()
+]
+logger.info("cors_configured", allowed_origins=origins)
+
 app = FastAPI(title="Aura Agent Gateway", version="1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins="http://localhost:3000",
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,8 +60,18 @@ FastAPIInstrumentor.instrument_app(app)
 # Instrument gRPC client for distributed tracing
 GrpcInstrumentorClient().instrument()
 
+# gRPC channel and stubs (reused across requests for performance)
 channel = grpc.insecure_channel(settings.core_service_host)
 stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
+health_stub = health_pb2_grpc.HealthStub(channel)
+
+# Register health check endpoints
+register_health_endpoints(
+    app,
+    health_stub,
+    health_check_timeout=settings.health_check_timeout,
+    slow_threshold_ms=settings.health_check_slow_threshold_ms,
+)
 
 # gRPC metadata key for request_id
 REQUEST_ID_METADATA_KEY = "x-request-id"

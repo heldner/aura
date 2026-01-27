@@ -2,6 +2,10 @@ FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 WORKDIR /app
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 

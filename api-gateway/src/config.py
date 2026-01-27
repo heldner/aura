@@ -21,6 +21,19 @@ class Settings(BaseSettings):
     otel_service_name: str = "aura-gateway"
     otel_exporter_otlp_endpoint: str = "http://jaeger:4317"
 
+    # CORS Configuration
+    # Comma-separated list of allowed origins (e.g., "https://app1.com,https://app2.com")
+    # Defaults to production URL, can be overridden for development
+    cors_origins: str = "https://aura.zae.life"
+
+    # Health Check Configuration
+    health_check_timeout: float = (
+        5.0  # Timeout for core service health checks (seconds)
+    )
+    health_check_slow_threshold_ms: float = (
+        100.0  # Log warning if health check exceeds this duration (milliseconds)
+    )
+
     @model_validator(mode="after")
     def validate_otel_config(self) -> "Settings":
         """Validate OpenTelemetry configuration."""

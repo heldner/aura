@@ -1,18 +1,22 @@
 import nacl from 'tweetnacl'
-import { encode as encodeBase64 } from 'js-base64'
 import { fromJson } from "@bufbuild/protobuf";
 import { SearchResponseSchema, SearchResultItem, SearchResponse, NegotiateRequest, NegotiateResponse, NegotiateResponseSchema } from './aura/negotiation/v1/negotiation_pb'
 
 export class BrowserAgentWallet {
   private keyPair: nacl.SignKeyPair
   private agentId: string
-  private readonly GATEWAY_URL: string = 'http://localhost:8000/v1'
+  private readonly GATEWAY_URL: string
 
-  constructor() {
+  constructor(gatewayUrl?: string) {
+    // Configure API Gateway URL from environment or parameter
+    this.GATEWAY_URL = gatewayUrl ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      'http://localhost:8000/v1'
+
     // Generate Ed25519 key pair
     this.keyPair = nacl.sign.keyPair()
-    // Create agent ID from public key
-    this.agentId = `did:web:agent-${Buffer.from(this.keyPair.publicKey).toString('hex').substring(0, 8)}`
+    // Create agent ID from public key (did:key format with full hex)
+    this.agentId = `did:key:${Array.from(this.keyPair.publicKey).map(b => b.toString(16).padStart(2, '0')).join('')}`
   }
 
   /**
@@ -31,41 +35,65 @@ export class BrowserAgentWallet {
 
   /**
    * Hash the request body to create a consistent signature
+   * Returns SHA-256 hash as hex string to match backend format
    */
-  private hashBody(body: unknown): string {
-    if (!body) return ''
-    
-    // Sort keys for consistent hashing
-    const sortedBody = typeof body === 'object' && body !== null
-      ? Object.keys(body as object).sort().reduce((acc, key) => {
-          acc[key] = (body as Record<string, unknown>)[key]
-          return acc
-        }, {} as Record<string, unknown>)
-      : body
-    
-    return encodeBase64(JSON.stringify(sortedBody))
+  private async hashBody(body: unknown): Promise<string> {
+    // Recursively sort object keys to ensure a canonical JSON representation
+    // that matches the backend's implementation.
+    const deepSort = (obj: any): any => {
+      if (Array.isArray(obj)) {
+        return obj.map(v => deepSort(v));
+      }
+      if (obj !== null && typeof obj === 'object') {
+        return Object.keys(obj).sort().reduce((result, key) => {
+          result[key] = deepSort(obj[key]);
+          return result;
+        }, {} as Record<string, any>);
+      }
+      return obj;
+    };
+
+    // Prepare data for hashing: empty array for no body, or encoded canonical JSON
+    const dataToHash = !body
+      ? new Uint8Array(0)
+      : new TextEncoder().encode(JSON.stringify(deepSort(body)));
+
+    // Calculate SHA-256 hash
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataToHash);
+
+    // Convert to hex string (matches Python hashlib.sha256().hexdigest())
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
   }
 
   /**
    * Sign a request with Ed25519 and return authentication headers
+   * Format matches backend: METHOD + PATH + TIMESTAMP + BODY_HASH (no separators)
    */
-  signRequest(method: string, path: string, body: unknown = null): Record<string, string> {
-    const timestamp = Date.now().toString()
-    const bodyHash = this.hashBody(body)
-    
-    // Create canonical request format
-    const canonicalRequest = `${method.toUpperCase()}:${path}:${timestamp}:${bodyHash}`
-    
-    // Sign with Ed25519
+  async signRequest(method: string, path: string, body: unknown = null): Promise<Record<string, string>> {
+    // 1. Timestamp in SECONDS (not milliseconds)
+    const timestamp = Math.floor(Date.now() / 1000).toString()
+
+    // 2. Hash body as HEX
+    const bodyHash = await this.hashBody(body)
+
+    // 3. Create canonical request: METHOD + PATH + TIMESTAMP + BODY_HASH
+    // Direct concatenation, no separators
+    // Uppercase method for HTTP standard compliance (backend receives uppercase)
+    const canonicalRequest = `${method.toUpperCase()}${path}${timestamp}${bodyHash}`
+
+    // 4. Sign with Ed25519
     const signature = nacl.sign.detached(
       new TextEncoder().encode(canonicalRequest),
       this.keyPair.secretKey
     )
 
+    // 5. Return headers with HEX-encoded signature (not base64)
     return {
       'X-Agent-ID': this.agentId,
       'X-Timestamp': timestamp,
-      'X-Signature': Buffer.from(signature).toString('base64')
+      'X-Signature': Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('')
     }
   }
 
@@ -73,8 +101,9 @@ export class BrowserAgentWallet {
    * Make an authenticated API request
    */
   async fetchWithAuth(path: string, method: string = 'GET', body: unknown = null): Promise<Response> {
-    const headers = this.signRequest(method, path, body)
-    
+    // signRequest is now async, so await it
+    const headers = await this.signRequest(method, path, body)
+
     const response = await fetch(`${this.GATEWAY_URL}${path}`, {
       method,
       headers: {
