@@ -14,6 +14,7 @@ from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from telemetry import init_telemetry
 
 from config import get_settings
@@ -206,7 +207,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
                 )
             finally:
                 session.close()
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error("health_check_failed", error=str(e), exc_info=True)
             return health_pb2.HealthCheckResponse(
                 status=health_pb2.HealthCheckResponse.NOT_SERVING

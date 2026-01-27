@@ -130,6 +130,19 @@ async def check_core_service_health(
 
     except grpc.RpcError as e:
         latency_ms = (time.perf_counter() - start_time) * 1000
+        if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+            logger.warning(
+                "core_service_health_check_timeout",
+                timeout_seconds=timeout,
+                latency_ms=round(latency_ms, 2),
+                source="grpc",
+            )
+            return HealthCheckResult(
+                status=HealthStatus.TIMEOUT,
+                message=f"gRPC deadline exceeded after {timeout}s",
+                latency_ms=round(latency_ms, 2),
+            )
+
         logger.error(
             "core_service_health_check_rpc_error",
             code=e.code(),
