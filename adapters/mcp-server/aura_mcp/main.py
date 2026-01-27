@@ -186,8 +186,8 @@ class AuraMCPServer:
             logger.error(f"🔴 Network error: {e}")
             return "❌ Negotiation failed: Could not connect to Aura Gateway"
         except Exception as e:
-            logger.error(f"🔴 Unexpected error: {e}")
-            return f"❌ Negotiation failed: {str(e)}"
+            logger.error(f"🔴 Unexpected error in negotiate_price: {e}", exc_info=True)
+            return f"❌ Negotiation failed due to an unexpected internal error."
 
     async def shutdown(self):
         """Close the underlying HTTP client."""
