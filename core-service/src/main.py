@@ -3,6 +3,7 @@ from concurrent import futures
 from typing import Protocol
 
 import grpc
+from grpc_health.v1 import health_pb2, health_pb2_grpc
 from logging_config import (
     bind_request_id,
     clear_request_context,
@@ -12,6 +13,7 @@ from logging_config import (
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from sqlalchemy import text
 from telemetry import init_telemetry
 
 from config import get_settings
@@ -171,18 +173,86 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
                 clear_request_context()
 
 
+class HealthServicer(health_pb2_grpc.HealthServicer):
+    """gRPC Health Checking Protocol implementation for Core Service.
+
+    Implements the standard grpc.health.v1.Health service to allow clients
+    (including load balancers and orchestrators) to verify service health.
+
+    The health check verifies database connectivity by executing a simple
+    query. This ensures the service can handle actual requests.
+    """
+
+    def Check(self, request, context):
+        """Performs synchronous health check.
+
+        Verifies that the Core Service can connect to and query the database.
+        Returns SERVING if healthy, NOT_SERVING if database is unreachable.
+
+        Args:
+            request: HealthCheckRequest (service name, typically empty)
+            context: gRPC context
+
+        Returns:
+            HealthCheckResponse with status SERVING or NOT_SERVING
+        """
+        try:
+            session = SessionLocal()
+            try:
+                session.execute(text("SELECT 1"))
+                logger.debug("health_check_passed", component="database")
+                return health_pb2.HealthCheckResponse(
+                    status=health_pb2.HealthCheckResponse.SERVING
+                )
+            finally:
+                session.close()
+        except Exception as e:
+            logger.error("health_check_failed", error=str(e), exc_info=True)
+            return health_pb2.HealthCheckResponse(
+                status=health_pb2.HealthCheckResponse.NOT_SERVING
+            )
+
+    def Watch(self, request, context):
+        """Health status streaming (not implemented).
+
+        The Watch method allows clients to stream health status changes.
+        This is not currently implemented as we use polling-based checks.
+
+        Args:
+            request: HealthCheckRequest
+            context: gRPC context
+
+        Returns:
+            HealthCheckResponse (never called, raises UNIMPLEMENTED)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Health status streaming not implemented")
+        return health_pb2.HealthCheckResponse()
+
+
 def serve():
     strategy = MistralStrategy()
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=settings.grpc_max_workers)
     )
+
+    # Register negotiation service
     negotiation_pb2_grpc.add_NegotiationServiceServicer_to_server(
         NegotiationService(strategy), server
     )
 
+    # Register health service
+    health_servicer = HealthServicer()
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+
     server.add_insecure_port(f"[::]:{settings.grpc_port}")
-    logger.info("server_started", port=settings.grpc_port, database="postgres")
+    logger.info(
+        "server_started",
+        port=settings.grpc_port,
+        database="postgres",
+        services=["NegotiationService", "Health"],
+    )
     server.start()
     server.wait_for_termination()
 
