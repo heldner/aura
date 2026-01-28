@@ -13,6 +13,7 @@ from logging_config import (
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from telemetry import init_telemetry
 
@@ -266,3 +267,28 @@ async def search_items(request: Request, agent_did: str = Depends(verify_signatu
             code=str(e.code()),
         )
         raise HTTPException(status_code=500, detail="Core service search error") from e
+
+
+@app.get("/v1/system/status")
+async def system_status():
+    """
+    Expose internal infrastructure metrics.
+
+    Returns cluster resource usage (CPU, memory) from Prometheus.
+    """
+    try:
+        grpc_request = negotiation_pb2.GetSystemStatusRequest()
+        response = await run_in_threadpool(stub.GetSystemStatus, grpc_request)
+
+        return {
+            "status": response.status,
+            "cpu_usage_percent": response.cpu_usage_percent,
+            "memory_usage_mb": response.memory_usage_mb,
+            "timestamp": response.timestamp,
+            "cached": response.cached,
+        }
+    except grpc.RpcError as e:
+        logger.error("system_status_grpc_error", error=e.details())
+        raise HTTPException(
+            status_code=500, detail="Monitoring service unavailable"
+        ) from e

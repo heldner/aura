@@ -1,10 +1,7 @@
 """Aura MCP tools."""
 
 from fastmcp import FastMCP
-from fastmcp.tools import tool
-
 from server import AuraMCPServer
-
 
 mcp = FastMCP(
     name="Aura",

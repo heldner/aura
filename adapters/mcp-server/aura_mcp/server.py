@@ -7,12 +7,12 @@ providing search and negotiation capabilities to LLMs like Claude 3.5 Sonnet.
 
 import logging
 import os
+
 import httpx
 from dotenv import load_dotenv
 
 # Import AgentWallet from parent directory
 from aura_mcp.wallet import AgentWallet
-
 
 # Configure logging
 logging.basicConfig(
@@ -176,7 +176,7 @@ class AuraMCPServer:
             return "❌ Negotiation failed: Could not connect to Aura Gateway"
         except Exception as e:
             logger.error(f"🔴 Unexpected error in negotiate_price: {e}", exc_info=True)
-            return f"❌ Negotiation failed due to an unexpected internal error."
+            return "❌ Negotiation failed due to an unexpected internal error."
 
     async def shutdown(self):
         """Close the underlying HTTP client."""
