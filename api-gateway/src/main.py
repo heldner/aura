@@ -1,4 +1,5 @@
 import uuid
+from contextlib import asynccontextmanager
 
 import grpc
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -45,7 +46,51 @@ origins = [
 ]
 logger.info("cors_configured", allowed_origins=origins)
 
-app = FastAPI(title="Aura Agent Gateway", version="1.0")
+# Instrument gRPC client for distributed tracing
+GrpcInstrumentorClient().instrument()
+
+# Declare globals that will be initialized during startup
+channel: grpc.aio.Channel
+stub: negotiation_pb2_grpc.NegotiationServiceStub
+health_stub: health_pb2_grpc.HealthStub
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage gRPC channel lifecycle (startup and shutdown)."""
+    global channel, stub, health_stub
+
+    # --- Startup ---
+    logger.info("startup_begin", service="api-gateway")
+    channel = grpc.aio.insecure_channel(settings.core_service_host)
+    stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
+    health_stub = health_pb2_grpc.HealthStub(channel)
+
+    # Register health check endpoints
+    register_health_endpoints(
+        app,
+        health_stub,
+        health_check_timeout=settings.health_check_timeout,
+        slow_threshold_ms=settings.health_check_slow_threshold_ms,
+    )
+
+    logger.info(
+        "startup_complete",
+        grpc_target=settings.core_service_host,
+        health_endpoints_registered=True,
+    )
+
+    try:
+        yield
+    finally:
+        # --- Shutdown ---
+        logger.info("shutdown_begin", service="api-gateway")
+        await channel.close()
+        logger.info("shutdown_complete", grpc_channel_closed=True)
+
+
+# Initialize FastAPI with lifespan manager
+app = FastAPI(title="Aura Agent Gateway", version="1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -56,23 +101,6 @@ app.add_middleware(
 
 # Instrument FastAPI for automatic tracing
 FastAPIInstrumentor.instrument_app(app)
-
-# Instrument gRPC client for distributed tracing
-GrpcInstrumentorClient().instrument()
-
-# gRPC channel and stubs (reused across requests for performance)
-# Use async channel to communicate with async core service
-channel = grpc.aio.insecure_channel(settings.core_service_host)
-stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
-health_stub = health_pb2_grpc.HealthStub(channel)
-
-# Register health check endpoints
-register_health_endpoints(
-    app,
-    health_stub,
-    health_check_timeout=settings.health_check_timeout,
-    slow_threshold_ms=settings.health_check_slow_threshold_ms,
-)
 
 # gRPC metadata key for request_id
 REQUEST_ID_METADATA_KEY = "x-request-id"
