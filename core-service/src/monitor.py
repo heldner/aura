@@ -18,7 +18,7 @@ logger = structlog.get_logger(__name__)
 
 
 class MetricsCache:
-    """Thread-safe cache for Prometheus metrics with TTL."""
+    """A simple in-memory cache for Prometheus metrics with a TTL."""
 
     def __init__(self, ttl_seconds: int = 30):
         """

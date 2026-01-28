@@ -10,7 +10,7 @@ service NegotiationService {
     rpc Search (SearchRequest) returns (SearchResponse);
 
     // RPC method for retrieving system status and metrics.
-    rpc GetSystemStatus (SystemStatusRequest) returns (SystemStatusResponse);
+    rpc GetSystemStatus (GetSystemStatusRequest) returns (GetSystemStatusResponse);
 }
 
 message NegotiateRequest {
@@ -79,9 +79,9 @@ message SearchResultItem {
   string description_snippet = 5; // Для контекста агенту
 }
 
-message SystemStatusRequest {}
+message GetSystemStatusRequest {}
 
-message SystemStatusResponse {
+message GetSystemStatusResponse {
   string status = 1;              // "ok" | "error"
   double cpu_usage_percent = 2;
   double memory_usage_mb = 3;

@@ -10,6 +10,7 @@ from logging_config import (
     configure_logging,
     get_logger,
 )
+from monitor import get_hive_metrics
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
@@ -20,7 +21,6 @@ from telemetry import init_telemetry
 from config import get_settings
 from db import InventoryItem, SessionLocal, engine
 from embeddings import generate_embedding
-from monitor import get_hive_metrics
 from proto.aura.negotiation.v1 import negotiation_pb2, negotiation_pb2_grpc
 
 # Configure structured logging on startup
@@ -174,12 +174,12 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
                 clear_request_context()
 
     async def GetSystemStatus(
-        self, request: negotiation_pb2.SystemStatusRequest, context
-    ) -> negotiation_pb2.SystemStatusResponse:
+        self, request: negotiation_pb2.GetSystemStatusRequest, context
+    ) -> negotiation_pb2.GetSystemStatusResponse:
         """Return infrastructure metrics from Prometheus."""
         try:
             metrics = await get_hive_metrics()
-            return negotiation_pb2.SystemStatusResponse(
+            return negotiation_pb2.GetSystemStatusResponse(
                 status=metrics["status"],
                 cpu_usage_percent=metrics.get("cpu_usage_percent", 0.0),
                 memory_usage_mb=metrics.get("memory_usage_mb", 0.0),
@@ -190,7 +190,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
             logger.error("system_status_error", error=str(e), exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Failed to retrieve system metrics")
-            return negotiation_pb2.SystemStatusResponse(status="error")
+            return negotiation_pb2.GetSystemStatusResponse(status="error")
 
 
 class HealthServicer(health_pb2_grpc.HealthServicer):

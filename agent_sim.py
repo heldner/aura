@@ -1,7 +1,7 @@
 import os
 import time
-import requests
 
+import requests
 from dotenv import load_dotenv
 
 from agent_identity import AgentWallet
@@ -55,7 +55,7 @@ def run_agent_scenario(scenario_name, item_id, bid, wallet=None):
         }
 
         response = requests.post(
-            f"{GATEWAY_URL}/{method}", json=payload, headers=headers)
+            f"{GATEWAY_URL}{method}", json=payload, headers=headers)
         latency = (time.time() - start_ts) * 1000
 
         print(f"⏱️  Latency: {latency:.2f}ms")

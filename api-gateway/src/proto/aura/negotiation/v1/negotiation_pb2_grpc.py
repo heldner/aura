@@ -27,8 +27,8 @@ class NegotiationServiceStub(object):
                 _registered_method=True)
         self.GetSystemStatus = channel.unary_unary(
                 '/aura.negotiation.v1.NegotiationService/GetSystemStatus',
-                request_serializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusRequest.SerializeToString,
-                response_deserializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusResponse.FromString,
+                request_serializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusRequest.SerializeToString,
+                response_deserializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusResponse.FromString,
                 _registered_method=True)
 
 
@@ -71,8 +71,8 @@ def add_NegotiationServiceServicer_to_server(servicer, server):
             ),
             'GetSystemStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetSystemStatus,
-                    request_deserializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusRequest.FromString,
-                    response_serializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusResponse.SerializeToString,
+                    request_deserializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusRequest.FromString,
+                    response_serializer=aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -155,8 +155,8 @@ class NegotiationService(object):
             request,
             target,
             '/aura.negotiation.v1.NegotiationService/GetSystemStatus',
-            aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusRequest.SerializeToString,
-            aura_dot_negotiation_dot_v1_dot_negotiation__pb2.SystemStatusResponse.FromString,
+            aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusRequest.SerializeToString,
+            aura_dot_negotiation_dot_v1_dot_negotiation__pb2.GetSystemStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

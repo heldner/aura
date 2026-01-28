@@ -113,11 +113,11 @@ class SearchResultItem(_message.Message):
     description_snippet: str
     def __init__(self, item_id: _Optional[str] = ..., name: _Optional[str] = ..., base_price: _Optional[float] = ..., similarity_score: _Optional[float] = ..., description_snippet: _Optional[str] = ...) -> None: ...
 
-class SystemStatusRequest(_message.Message):
+class GetSystemStatusRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class SystemStatusResponse(_message.Message):
+class GetSystemStatusResponse(_message.Message):
     __slots__ = ("status", "cpu_usage_percent", "memory_usage_mb", "timestamp", "cached")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     CPU_USAGE_PERCENT_FIELD_NUMBER: _ClassVar[int]

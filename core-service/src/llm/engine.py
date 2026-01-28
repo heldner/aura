@@ -5,7 +5,7 @@ Provides a consistent interface for calling any LLM provider (OpenAI, Mistral,
 Anthropic, Ollama, etc.) with structured output support.
 """
 
-from typing import Any, Type
+from typing import Any
 
 import litellm
 import structlog
@@ -37,7 +37,7 @@ class LLMEngine:
     def complete(
         self,
         messages: list[dict[str, str]],
-        response_format: Type[BaseModel] | None = None,
+        response_format: type[BaseModel] | None = None,
     ) -> BaseModel | str:
         """
         Call LLM with structured output support.
@@ -71,22 +71,21 @@ class LLMEngine:
             }
 
             if response_format:
-                kwargs["response_format"] = response_format
+                kwargs["response_model"] = response_format
 
             response = litellm.completion(**kwargs)
 
             # Extract content
             content = response.choices[0].message.content
 
-            # Parse structured output if requested
+            # Return parsed structured output if requested
             if response_format:
-                result = response_format.model_validate_json(content)
                 logger.info(
                     "llm_call_completed",
                     model=self.model,
                     structured=True,
                 )
-                return result
+                return content
             else:
                 logger.info(
                     "llm_call_completed",

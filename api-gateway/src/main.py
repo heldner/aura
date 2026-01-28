@@ -276,7 +276,7 @@ async def system_status():
     Returns cluster resource usage (CPU, memory) from Prometheus.
     """
     try:
-        grpc_request = negotiation_pb2.SystemStatusRequest()
+        grpc_request = negotiation_pb2.GetSystemStatusRequest()
         response = stub.GetSystemStatus(grpc_request)
 
         return {
