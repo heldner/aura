@@ -48,15 +48,8 @@ async def negotiate_price(item_id: str, bid: float) -> str:
 @mcp.tool
 def demonstrate_wallet() -> str:
     """Demonstrate the generated wallet's DID."""
-    return f"🔑 Agent Wallet DID: {self.wallet.did}"
-
-
-def main():
-    # mcp.tool(server.search_hotels)
-    # mcp.tool(server.negotiate_price)
-    mcp.run()
+    return f"🔑 Agent Wallet DID: {server.wallet.did}"
 
 
 if __name__ == "__main__":
-    main()
-    # mcp.run()
+    mcp.run()
