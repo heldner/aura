@@ -1,4 +1,5 @@
 import uuid
+from contextlib import asynccontextmanager
 
 import grpc
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -13,7 +14,6 @@ from logging_config import (
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
 from pydantic import BaseModel
-from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from telemetry import init_telemetry
 
@@ -46,7 +46,51 @@ origins = [
 ]
 logger.info("cors_configured", allowed_origins=origins)
 
-app = FastAPI(title="Aura Agent Gateway", version="1.0")
+# Instrument gRPC client for distributed tracing
+GrpcInstrumentorClient().instrument()
+
+# Declare globals that will be initialized during startup
+channel: grpc.aio.Channel
+stub: negotiation_pb2_grpc.NegotiationServiceStub
+health_stub: health_pb2_grpc.HealthStub
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage gRPC channel lifecycle (startup and shutdown)."""
+    global channel, stub, health_stub
+
+    # --- Startup ---
+    logger.info("startup_begin", service="api-gateway")
+    channel = grpc.aio.insecure_channel(settings.core_service_host)
+    stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
+    health_stub = health_pb2_grpc.HealthStub(channel)
+
+    # Register health check endpoints
+    register_health_endpoints(
+        app,
+        health_stub,
+        health_check_timeout=settings.health_check_timeout,
+        slow_threshold_ms=settings.health_check_slow_threshold_ms,
+    )
+
+    logger.info(
+        "startup_complete",
+        grpc_target=settings.core_service_host,
+        health_endpoints_registered=True,
+    )
+
+    try:
+        yield
+    finally:
+        # --- Shutdown ---
+        logger.info("shutdown_begin", service="api-gateway")
+        await channel.close()
+        logger.info("shutdown_complete", grpc_channel_closed=True)
+
+
+# Initialize FastAPI with lifespan manager
+app = FastAPI(title="Aura Agent Gateway", version="1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -57,22 +101,6 @@ app.add_middleware(
 
 # Instrument FastAPI for automatic tracing
 FastAPIInstrumentor.instrument_app(app)
-
-# Instrument gRPC client for distributed tracing
-GrpcInstrumentorClient().instrument()
-
-# gRPC channel and stubs (reused across requests for performance)
-channel = grpc.insecure_channel(settings.core_service_host)
-stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
-health_stub = health_pb2_grpc.HealthStub(channel)
-
-# Register health check endpoints
-register_health_endpoints(
-    app,
-    health_stub,
-    health_check_timeout=settings.health_check_timeout,
-    slow_threshold_ms=settings.health_check_slow_threshold_ms,
-)
 
 # gRPC metadata key for request_id
 REQUEST_ID_METADATA_KEY = "x-request-id"
@@ -153,7 +181,7 @@ async def negotiate(
         logger.info(
             "grpc_call_started", service="NegotiationService", method="Negotiate"
         )
-        response = stub.Negotiate(grpc_request, metadata=metadata)
+        response = await stub.Negotiate(grpc_request, metadata=metadata)
         logger.info(
             "grpc_call_completed", service="NegotiationService", method="Negotiate"
         )
@@ -236,7 +264,7 @@ async def search_items(request: Request, agent_did: str = Depends(verify_signatu
 
     try:
         logger.info("grpc_call_started", service="NegotiationService", method="Search")
-        response = stub.Search(grpc_req, metadata=metadata)
+        response = await stub.Search(grpc_req, metadata=metadata)
         logger.info(
             "grpc_call_completed",
             service="NegotiationService",
@@ -278,7 +306,7 @@ async def system_status():
     """
     try:
         grpc_request = negotiation_pb2.GetSystemStatusRequest()
-        response = await run_in_threadpool(stub.GetSystemStatus, grpc_request)
+        response = await stub.GetSystemStatus(grpc_request)
 
         return {
             "status": response.status,
