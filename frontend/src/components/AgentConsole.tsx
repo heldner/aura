@@ -214,7 +214,7 @@ export default function AgentConsole() {
               onClick={() => handleSelectItem(item)}
             >
               <CardHeader>
-                <CardTitle className="text-cyberpunk-blue text-sm truncate h4">{item.name}</CardTitle>
+                <CardTitle className="text-cyberpunk-blue text-sm truncate">{item.name}</CardTitle>
                 <CardDescription className="caption-text text-xs">ID: {item.itemId}</CardDescription>
               </CardHeader>
               <CardContent>
