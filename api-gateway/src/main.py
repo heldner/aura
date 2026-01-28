@@ -13,7 +13,6 @@ from logging_config import (
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
 from pydantic import BaseModel
-from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from telemetry import init_telemetry
 
@@ -62,7 +61,8 @@ FastAPIInstrumentor.instrument_app(app)
 GrpcInstrumentorClient().instrument()
 
 # gRPC channel and stubs (reused across requests for performance)
-channel = grpc.insecure_channel(settings.core_service_host)
+# Use async channel to communicate with async core service
+channel = grpc.aio.insecure_channel(settings.core_service_host)
 stub = negotiation_pb2_grpc.NegotiationServiceStub(channel)
 health_stub = health_pb2_grpc.HealthStub(channel)
 
@@ -153,7 +153,7 @@ async def negotiate(
         logger.info(
             "grpc_call_started", service="NegotiationService", method="Negotiate"
         )
-        response = stub.Negotiate(grpc_request, metadata=metadata)
+        response = await stub.Negotiate(grpc_request, metadata=metadata)
         logger.info(
             "grpc_call_completed", service="NegotiationService", method="Negotiate"
         )
@@ -236,7 +236,7 @@ async def search_items(request: Request, agent_did: str = Depends(verify_signatu
 
     try:
         logger.info("grpc_call_started", service="NegotiationService", method="Search")
-        response = stub.Search(grpc_req, metadata=metadata)
+        response = await stub.Search(grpc_req, metadata=metadata)
         logger.info(
             "grpc_call_completed",
             service="NegotiationService",
@@ -278,7 +278,7 @@ async def system_status():
     """
     try:
         grpc_request = negotiation_pb2.GetSystemStatusRequest()
-        response = await run_in_threadpool(stub.GetSystemStatus, grpc_request)
+        response = await stub.GetSystemStatus(grpc_request)
 
         return {
             "status": response.status,
