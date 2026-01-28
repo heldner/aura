@@ -1,8 +1,10 @@
+import asyncio
 import time
 from concurrent import futures
 from typing import Protocol
 
 import grpc
+import grpc.aio
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 from logging_config import (
     bind_request_id,
@@ -274,10 +276,10 @@ def create_strategy():
         return LiteLLMStrategy(model=settings.llm_model)
 
 
-def serve():
+async def serve():
     strategy = create_strategy()
 
-    server = grpc.server(
+    server = grpc.aio.server(
         futures.ThreadPoolExecutor(max_workers=settings.grpc_max_workers)
     )
 
@@ -297,9 +299,9 @@ def serve():
         database="postgres",
         services=["NegotiationService", "Health"],
     )
-    server.start()
-    server.wait_for_termination()
+    await server.start()
+    await server.wait_for_termination()
 
 
 if __name__ == "__main__":
-    serve()
+    asyncio.run(serve())

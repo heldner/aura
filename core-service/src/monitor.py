@@ -5,6 +5,7 @@ Queries Prometheus for cluster health metrics (CPU, memory) with 30-second
 caching to reduce load on Prometheus.
 """
 
+import asyncio
 import time
 from datetime import datetime
 from typing import Any
@@ -101,19 +102,20 @@ async def get_hive_metrics() -> dict[str, Any]:
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            # Query CPU
-            cpu_response = await client.get(
+            # Query CPU and Memory concurrently
+            cpu_task = client.get(
                 f"{settings.prometheus_url}/api/v1/query",
                 params={"query": cpu_query},
             )
-            cpu_response.raise_for_status()
-            cpu_data = cpu_response.json()
-
-            # Query Memory
-            mem_response = await client.get(
+            mem_task = client.get(
                 f"{settings.prometheus_url}/api/v1/query",
                 params={"query": mem_query},
             )
+            cpu_response, mem_response = await asyncio.gather(cpu_task, mem_task)
+
+            cpu_response.raise_for_status()
+            cpu_data = cpu_response.json()
+
             mem_response.raise_for_status()
             mem_data = mem_response.json()
 

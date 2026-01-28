@@ -13,6 +13,7 @@ from logging_config import (
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from telemetry import init_telemetry
 
@@ -277,7 +278,7 @@ async def system_status():
     """
     try:
         grpc_request = negotiation_pb2.GetSystemStatusRequest()
-        response = stub.GetSystemStatus(grpc_request)
+        response = await run_in_threadpool(stub.GetSystemStatus, grpc_request)
 
         return {
             "status": response.status,
