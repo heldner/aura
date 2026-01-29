@@ -6,7 +6,7 @@ from config import settings
 def get_embeddings_model():
     return MistralAIEmbeddings(
         model="mistral-embed",
-        mistral_api_key=settings.llm.api_key.get_secret_value(),
+        mistral_api_key=settings.llm.mistral_api_key.get_secret_value(),
     )
 
 

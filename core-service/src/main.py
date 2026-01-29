@@ -271,10 +271,17 @@ def create_strategy():
         )
         from llm.strategy import LiteLLMStrategy
 
+        # Select appropriate API key based on model provider
+        api_key = None
+        if "openai" in settings.llm.model:
+            api_key = settings.llm.openai_api_key.get_secret_value()
+        elif "mistral" in settings.llm.model:
+            api_key = settings.llm.mistral_api_key.get_secret_value()
+
         return LiteLLMStrategy(
             model=settings.llm.model,
             temperature=settings.llm.temperature,
-            api_key=settings.llm.api_key.get_secret_value(),
+            api_key=api_key,
         )
 
 

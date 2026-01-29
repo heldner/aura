@@ -1,3 +1,4 @@
+import logging
 from contextvars import ContextVar
 
 import structlog
@@ -9,8 +10,6 @@ request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 def configure_logging(log_level: str = "info") -> None:
     """Configure structlog to output JSON format for structured logging."""
-    import logging
-
     level = getattr(logging, log_level.upper(), logging.INFO)
 
     structlog.configure(
@@ -41,8 +40,6 @@ def add_otel_context(logger, method_name, event_dict):
                 event_dict["span_id"] = format(span_context.span_id, "016x")
     except Exception as e:
         # Log for debugging but otherwise fail silently.
-        import logging
-
         logging.getLogger(__name__).debug(
             "Could not add OTel context to log record.", exc_info=e
         )
