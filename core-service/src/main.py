@@ -376,6 +376,7 @@ def create_strategy():
 
     Strategies:
     - "rule": RuleBasedStrategy (no LLM required)
+    - "dspy": DSPyStrategy (self-optimizing negotiation engine)
     - Any litellm model: LiteLLMStrategy (e.g., "openai/gpt-4o", "mistral/mistral-large-latest")
 
     Returns:
@@ -386,6 +387,11 @@ def create_strategy():
         from llm_strategy import RuleBasedStrategy
 
         return RuleBasedStrategy()
+    elif settings.llm.model == "dspy":
+        logger.info("strategy_selected", type="DSPyStrategy", model="self-optimizing")
+        from llm.dspy_strategy import DSPyStrategy
+
+        return DSPyStrategy()
     else:
         logger.info(
             "strategy_selected", type="LiteLLMStrategy", model=settings.llm.model
