@@ -17,6 +17,7 @@ from monitor import get_hive_metrics
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from prometheus_client import start_http_server
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from telemetry import init_telemetry
@@ -436,6 +437,13 @@ def create_crypto_provider():
 
 
 async def serve():
+    # Start Prometheus metrics server on port 9091
+    try:
+        start_http_server(9091)
+        logger.info("metrics_server_started", port=9091)
+    except Exception as e:
+        logger.error("metrics_server_failed", error=str(e))
+
     strategy = create_strategy()
 
     # Initialize crypto provider and market service if enabled
