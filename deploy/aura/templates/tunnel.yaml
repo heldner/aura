@@ -50,20 +50,19 @@ spec:
         image: "{{ .Values.tunnel.image.repository }}:{{ .Values.tunnel.image.tag }}"
         imagePullPolicy: {{ .Values.tunnel.image.pullPolicy | default "IfNotPresent" }}
         volumeMounts:
-        - name: config
+        - name: config-volume
           mountPath: /etc/frp/frpc.toml
           subPath: frpc.toml
-        - name: token
+        - name: token-volume
           mountPath: /etc/frp/token
-          subPath: token
-          readOnly: true
+          subPath: frp-token
       volumes:
-      - name: config
+      - name: config-volume
         configMap:
           name: "{{ .Release.Name }}-frpc-config"
-      - name: token
+      - name: token-volume
         secret:
-          secretName: "{{ .Release.Name }}-{{ .Values.secrets.frpClientToken.name }}"
+          secretName: aura-secrets
           items:
-          - key: token
-            path: token
+          - key: frp-client-token
+            path: frp-token
