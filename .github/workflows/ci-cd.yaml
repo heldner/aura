@@ -83,27 +83,34 @@ jobs:
     deploy:
         needs: build-and-push
         runs-on: self-hosted
-        env:
-            KUBECONFIG: /home/runner/.kube/config
         if: github.ref == 'refs/heads/main'
         steps:
             - uses: actions/checkout@v4
 
             - name: Sync K8s Secrets
               run: |
-                  kubectl create secret generic aura-secrets \
+                  kubectl --server=https://127.0.0.1:6443 \
+                    --token="${{ secrets.K8S_DEPLOYER_TOKEN }}" \
+                    --insecure-skip-tls-verify=true \
+                    create secret generic aura-secrets \
                     --from-literal=telegram-token="${{ secrets.AURA_TELEGRAM_TOKEN }}" \
                     --from-literal=mistral-key="${{ secrets.MISTRAL_API_KEY }}" \
                     --from-literal=openai-key="${{ secrets.OPENAI_API_KEY }}" \
                     --from-literal=solana-private-key="${{ secrets.SOLANA_PRIVATE_KEY }}" \
                     --from-literal=frp-client-token="${{ secrets.FRP_CLIENT_TOKEN }}" \
-                    --dry-run=client -o yaml | kubectl apply -f -
+                    --dry-run=client -o yaml | \
+                  kubectl --server=https://127.0.0.1:6443 \
+                    --token="${{ secrets.K8S_DEPLOYER_TOKEN }}" \
+                    --insecure-skip-tls-verify=true \
+                    apply -f -
 
             - name: Deploy to Cluster
               run: |
                   helm dependency update ./deploy/aura
-
                   helm upgrade aura ./deploy/aura --install --wait --timeout 5m \
+                    --kube-apiserver https://127.0.0.1:6443 \
+                    --kube-token "${{ secrets.K8S_DEPLOYER_TOKEN }}" \
+                    --kube-insecure-skip-tls-verify \
                     --set core.image.tag=sha-$(git rev-parse --short HEAD) \
                     --set gateway.image.tag=sha-$(git rev-parse --short HEAD) \
                     --set frontend.image.tag=sha-$(git rev-parse --short HEAD) \
@@ -111,5 +118,7 @@ jobs:
 
             - name: Verify Rollout
               run: |
-                  kubectl rollout status deployment/aura-core --timeout=60s
-                  kubectl rollout status deployment/aura-telegram --timeout=60s
+                  kubectl --server=https://127.0.0.1:6443 \
+                    --token="${{ secrets.K8S_DEPLOYER_TOKEN }}" \
+                    --insecure-skip-tls-verify=true \
+                    rollout status deployment/aura-core --timeout=60s
