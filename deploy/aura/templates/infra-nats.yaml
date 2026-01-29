@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-nats"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+      - name: nats
+        image: nats:2.10-alpine
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        ports:
+        - containerPort: 4222 # Client port
+        - containerPort: 8222 # Monitoring port
+        livenessProbe:
+          tcpSocket:
+            port: 4222
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 4222
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-nats"
+spec:
+  selector:
+    app: nats
+  ports:
+  - port: 4222
+    targetPort: 4222
