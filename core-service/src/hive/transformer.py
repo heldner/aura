@@ -21,7 +21,7 @@ class HiveTransformer:
         )
 
         # Configure DSPy
-        dspy.configure(lm=self.settings.llm.model)
+        dspy.configure(lm=dspy.LM(self.settings.llm.model))
 
         self.negotiator = self._load_negotiator()
 

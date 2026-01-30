@@ -1,11 +1,14 @@
+import os
 import time
 
 import requests
+from dotenv import load_dotenv
 
 from agent_identity import AgentWallet
 
-# Конфигурация
-GATEWAY = "http://localhost:8000/v1"
+load_dotenv()
+
+GATEWAY = os.getenv("AURA_GATEWAY_URL", "http://localhost:8000")
 
 
 class AutonomousBuyer:
