@@ -137,6 +137,7 @@ jobs:
                 SOL_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}
                 FRP_TOKEN: ${{ secrets.FRP_CLIENT_TOKEN }}
                 ENC_KEY: ${{ secrets.AURA_SECRET_ENCRYPTION_KEY }}
+                TELEGRAM_TOKEN_CHECK: ${{ secrets.AURA_TELEGRAM_TOKEN }}
               run: |
                   echo "Debug: Telegram Token Length: ${#TELEGRAM_TOKEN_CHECK}"
                   if [ "${#TELEGRAM_TOKEN_CHECK}" -eq 0 ]; then
@@ -153,9 +154,6 @@ jobs:
                     --from-literal=frp-client-token="$FRP_TOKEN" \
                     --from-literal=secret-encryption-key="$ENC_KEY" \
                     --dry-run=client -o yaml | kubectl apply -f -
-              env:
-                # Передаем только для проверки длины в echo
-                TELEGRAM_TOKEN_CHECK: ${{ secrets.AURA_TELEGRAM_TOKEN }}
 
             - name: Deploy to Cluster
               run: |
