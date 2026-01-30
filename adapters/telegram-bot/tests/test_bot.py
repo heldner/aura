@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from aiogram.filters import CommandObject
 from src.bot import (
-    cmd_start,
-    cmd_search,
-    process_select_hotel,
-    process_bid,
     NegotiationStates,
+    cmd_search,
+    cmd_start,
+    process_bid,
+    process_select_hotel,
 )
 
 

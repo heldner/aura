@@ -1,7 +1,8 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
-from hive.dna import HiveContext, Decision, Observation
 from hive.aggregator import HiveAggregator
+from hive.dna import Decision, HiveContext
 from hive.membrane import HiveMembrane
 
 

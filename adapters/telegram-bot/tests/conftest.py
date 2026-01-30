@@ -1,8 +1,8 @@
-import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from aiogram import types
-from src.interfaces import NegotiationProvider, SearchResult, NegotiationResult
+from src.interfaces import NegotiationProvider, NegotiationResult, SearchResult
 
 
 class MockNegotiationProvider(NegotiationProvider):
