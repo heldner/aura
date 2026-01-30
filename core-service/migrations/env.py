@@ -1,13 +1,7 @@
-import sys
 from logging.config import fileConfig
-from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
-
-# Add src directory to path for Alembic to find our models
-src_path = Path(__file__).resolve().parent.parent / "src"
-sys.path.insert(0, str(src_path))
 
 from config import settings
 from db import Base  # noqa: E402
