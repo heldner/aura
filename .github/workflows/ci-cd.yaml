@@ -74,8 +74,8 @@ jobs:
 
     # === STAGE 2: BUILD & PUBLISH ===
     build-and-push:
-        needs: check-changes
-        if: needs.check-changes.outputs.code == 'true'
+        needs: quality
+        # if: needs.check-changes.outputs.code == 'true'
         runs-on: ubuntu-latest
         permissions:
             contents: read
