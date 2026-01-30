@@ -79,7 +79,7 @@ redis:
 
 # Jaeger Configuration
 jaeger:
-  enabled: true
+  enabled: false
   service:
     type: LoadBalancer # Service type to expose Jaeger
   # Resource limits for Jaeger
@@ -108,6 +108,7 @@ frontend:
 
 # Telegram Bot Service Configuration
 telegram:
+  enabled: false
   image:
     repository: ghcr.io/zaebee/aura-telegram-bot
     tag: latest
