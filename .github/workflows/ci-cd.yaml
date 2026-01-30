@@ -153,7 +153,7 @@ jobs:
             - name: Deploy to Cluster
               run: |
                   helm dependency update ./deploy/aura
-                  helm upgrade aura ./deploy/aura --install --wait --timeout 5m \
+                  helm upgrade aura ./deploy/aura --install --atomic --wait --timeout 10m
                     --set core.image.tag=sha-$(git rev-parse --short HEAD) \
                     --set gateway.image.tag=sha-$(git rev-parse --short HEAD) \
                     --set frontend.image.tag=sha-$(git rev-parse --short HEAD) \
