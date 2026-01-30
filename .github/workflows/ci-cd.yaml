@@ -79,7 +79,7 @@ jobs:
             - name: Install uv
               uses: astral-sh/setup-uv@v6
               with:
-                  version: "0.5.1"
+                  version: "0.9.26"
                   enable-cache: true
             - name: Install Buf
               uses: bufbuild/buf-setup-action@v1
@@ -87,8 +87,10 @@ jobs:
                   github_token: ${{ github.token }}
             - name: Install Python Dependencies
               run: make install-dev
-            - name: Run Linters & Tests
-              run: make lint test
+            - name: Run Linters
+              run: make lint
+            - name: Run Tests
+              run: make test
 
     # === STAGE 2: THE FAN-OUT (PARALLEL BUILD) ===
     build-and-push:

@@ -6,15 +6,16 @@ Implements the PricingStrategy protocol using the self-optimizing DSPy module.
 
 import time
 from pathlib import Path
+from typing import Any, cast
 
 import dspy
 import structlog
-from guard.membrane import OutputGuard, SafetyViolation
-from llm.engine import AuraNegotiator
 
-from config import get_settings
-from db import InventoryItem, SessionLocal
-from proto.aura.negotiation.v1 import negotiation_pb2
+from src.config import get_settings
+from src.db import InventoryItem, SessionLocal
+from src.guard.membrane import OutputGuard, SafetyViolation
+from src.llm.engine import AuraNegotiator
+from src.proto.aura.negotiation.v1 import negotiation_pb2
 
 logger = structlog.get_logger(__name__)
 
@@ -26,7 +27,7 @@ class DSPyStrategy:
     with fallback to existing strategies for reliability.
     """
 
-    def __init__(self, compiled_program_path: str = "aura_brain.json"):
+    def __init__(self, compiled_program_path: str = "aura_brain.json") -> None:
         """Initialize DSPy strategy with compiled program.
 
         Args:
@@ -34,9 +35,9 @@ class DSPyStrategy:
         """
         self.compiled_program_path = compiled_program_path
         self.settings = get_settings()
-        self.negotiator = self._load_compiled_program()
+        self.negotiator: Any = self._load_compiled_program()
         self.guard = OutputGuard()
-        self.fallback_strategy = None
+        self.fallback_strategy: Any = None
 
         # Configure DSPy with litellm backend
         litellm_model = self.settings.llm.model
@@ -48,7 +49,7 @@ class DSPyStrategy:
             llm_model=litellm_model,
         )
 
-    def _load_compiled_program(self):
+    def _load_compiled_program(self) -> Any:
         """Load compiled DSPy program with fallback to untrained module.
 
         Searches for the compiled brain in both src/ and data/ directories.
@@ -83,15 +84,15 @@ class DSPyStrategy:
             logger.error("Failed to load compiled program", error=str(e))
             return AuraNegotiator()
 
-    def _get_fallback_strategy(self):
+    def _get_fallback_strategy(self) -> Any:
         """Get fallback strategy (lazy loading)."""
         if self.fallback_strategy is None:
             try:
-                from llm.strategy import LiteLLMStrategy
+                from src.llm.strategy import LiteLLMStrategy
 
                 self.fallback_strategy = LiteLLMStrategy(model=self.settings.llm.model)
             except ImportError:
-                from llm_strategy import RuleBasedStrategy
+                from src.llm_strategy import RuleBasedStrategy
 
                 self.fallback_strategy = RuleBasedStrategy()
         return self.fallback_strategy
@@ -104,7 +105,7 @@ class DSPyStrategy:
         finally:
             session.close()
 
-    def _create_standard_context(self, item: InventoryItem) -> dict:
+    def _create_standard_context(self, item: InventoryItem) -> dict[str, Any]:
         """Create standard economic context for DSPy module.
 
         Fetches dynamic context from item metadata if available.
@@ -229,15 +230,21 @@ class DSPyStrategy:
             else:
                 # Unknown action - fallback to existing strategy
                 logger.warning("unknown_dspy_action", action=action)
-                return self._get_fallback_strategy().evaluate(
-                    item_id, bid, reputation, request_id
+                return cast(
+                    negotiation_pb2.NegotiateResponse,
+                    self._get_fallback_strategy().evaluate(
+                        item_id, bid, reputation, request_id
+                    ),
                 )
 
-            return result
+            return cast(negotiation_pb2.NegotiateResponse, result)
 
         except Exception as e:
             logger.error("dspy_evaluation_error", error=str(e), exc_info=True)
             # Fallback to existing strategy on error
-            return self._get_fallback_strategy().evaluate(
-                item_id, bid, reputation, request_id
+            return cast(
+                negotiation_pb2.NegotiateResponse,
+                self._get_fallback_strategy().evaluate(
+                    item_id, bid, reputation, request_id
+                ),
             )

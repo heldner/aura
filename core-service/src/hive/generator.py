@@ -1,11 +1,12 @@
 import json
 import time
+from typing import Any
 
 import nats.errors
 import structlog
-from hive.dna import Event, Observation
 
-from config import get_settings
+from src.config import get_settings
+from src.hive.dna import Event, Observation
 
 logger = structlog.get_logger(__name__)
 
@@ -13,7 +14,7 @@ logger = structlog.get_logger(__name__)
 class HiveGenerator:
     """G - Generator: Emits events (heartbeats, transactions) to the Hive's blood stream (NATS)."""
 
-    def __init__(self, nats_client=None):
+    def __init__(self, nats_client: Any = None) -> None:
         """
         Initialize the generator.
 
@@ -74,8 +75,8 @@ class HiveGenerator:
                         event.topic, json.dumps(event.payload).encode()
                     )
                 except (
-                    nats.errors.ErrConnectionClosed,
-                    nats.errors.ErrTimeout,
+                    nats.errors.ConnectionClosedError,
+                    nats.errors.TimeoutError,
                 ) as e:
                     logger.error("nats_publish_failed", topic=event.topic, error=str(e))
         else:

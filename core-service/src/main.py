@@ -1,37 +1,37 @@
 import asyncio
 import uuid
 from concurrent import futures
-from typing import Protocol
+from typing import Any, Protocol
 
 import grpc
 import grpc.aio
 import nats
 from grpc_health.v1 import health_pb2, health_pb2_grpc
-from hive.aggregator import HiveAggregator
-from hive.connector import HiveConnector
-from hive.generator import HiveGenerator
-from hive.membrane import HiveMembrane
-from hive.metabolism import MetabolicLoop
-from hive.transformer import HiveTransformer
-from logging_config import (
-    bind_request_id,
-    clear_request_context,
-    configure_logging,
-    get_logger,
-)
 from opentelemetry import trace
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from prometheus_client import start_http_server
 from sqlalchemy import text
-from telemetry import init_telemetry
 
-from config import settings
-from config.llm import get_raw_key
-from db import InventoryItem, SessionLocal, engine
-from embeddings import generate_embedding
-from proto.aura.negotiation.v1 import negotiation_pb2, negotiation_pb2_grpc
+from src.config import settings
+from src.config.llm import get_raw_key
+from src.db import InventoryItem, SessionLocal, engine
+from src.embeddings import generate_embedding
+from src.hive.aggregator import HiveAggregator
+from src.hive.connector import HiveConnector
+from src.hive.generator import HiveGenerator
+from src.hive.membrane import HiveMembrane
+from src.hive.metabolism import MetabolicLoop
+from src.hive.transformer import HiveTransformer
+from src.logging_config import (
+    bind_request_id,
+    clear_request_context,
+    configure_logging,
+    get_logger,
+)
+from src.proto.aura.negotiation.v1 import negotiation_pb2, negotiation_pb2_grpc
+from src.telemetry import init_telemetry
 
 # Configure structured logging on startup
 configure_logging(log_level=settings.server.log_level)
@@ -59,7 +59,7 @@ LangchainInstrumentor().instrument()
 REQUEST_ID_METADATA_KEY = "x-request-id"
 
 
-def extract_request_id(context) -> str | None:
+def extract_request_id(context: Any) -> str | None:
     """Extract request_id from gRPC metadata."""
     metadata = dict(context.invocation_metadata())
     return metadata.get(REQUEST_ID_METADATA_KEY)
@@ -80,12 +80,14 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
     def __init__(
         self,
         metabolism: MetabolicLoop | None = None,
-        market_service=None,
-    ):
+        market_service: Any = None,
+    ) -> None:
         self.metabolism = metabolism
         self.market_service = market_service
 
-    async def Negotiate(self, request, context):
+    async def Negotiate(
+        self, request: Any, context: Any
+    ) -> negotiation_pb2.NegotiateResponse:
         """
         Main metabolic loop for negotiation:
         Signal -> A -> T -> Membrane -> C -> G
@@ -96,14 +98,15 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
             context.set_details("Metabolism is still initializing")
             return negotiation_pb2.NegotiateResponse()
 
-        request_id = extract_request_id(context) or getattr(
-            request, "request_id", str(uuid.uuid4())
+        request_id = str(
+            extract_request_id(context)
+            or getattr(request, "request_id", str(uuid.uuid4()))
         )
         bind_request_id(request_id)
 
         try:
             observation = await self.metabolism.execute(request)
-            return observation.data
+            return observation.data  # type: ignore
 
         except ValueError as e:
             logger.warning("invalid_argument", error=str(e))
@@ -124,7 +127,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
         finally:
             clear_request_context()
 
-    def Search(self, request, context):
+    def Search(self, request: Any, context: Any) -> negotiation_pb2.SearchResponse:
         """Semantic search implementation."""
         request_id = extract_request_id(context)
         if request_id:
@@ -189,7 +192,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
                 clear_request_context()
 
     async def GetSystemStatus(
-        self, request: negotiation_pb2.GetSystemStatusRequest, context
+        self, request: negotiation_pb2.GetSystemStatusRequest, context: Any
     ) -> negotiation_pb2.GetSystemStatusResponse:
         """Return infrastructure metrics from Prometheus."""
         if not self.metabolism:
@@ -213,7 +216,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
             return negotiation_pb2.GetSystemStatusResponse(status="error")
 
     async def CheckDealStatus(
-        self, request: negotiation_pb2.CheckDealStatusRequest, context
+        self, request: negotiation_pb2.CheckDealStatusRequest, context: Any
     ) -> negotiation_pb2.CheckDealStatusResponse:
         """Check crypto payment status and reveal secret if paid."""
         request_id = extract_request_id(context)
@@ -251,7 +254,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
                     deal_id=request.deal_id,
                     status=response.status,
                 )
-                return response
+                return response  # type: ignore
             finally:
                 session.close()
 
@@ -270,9 +273,7 @@ class NegotiationService(negotiation_pb2_grpc.NegotiationServiceServicer):
                 clear_request_context()
 
 
-
-
-def create_strategy():
+def create_strategy() -> PricingStrategy:
     """Create pricing strategy based on LLM_MODEL configuration.
 
     Strategies:
@@ -285,19 +286,19 @@ def create_strategy():
     """
     if settings.llm.model == "rule":
         logger.info("strategy_selected", type="RuleBasedStrategy", llm_required=False)
-        from llm_strategy import RuleBasedStrategy
+        from src.llm_strategy import RuleBasedStrategy
 
         return RuleBasedStrategy()
     elif settings.llm.model == "dspy":
         logger.info("strategy_selected", type="DSPyStrategy", model="self-optimizing")
-        from llm.dspy_strategy import DSPyStrategy
+        from src.llm.dspy_strategy import DSPyStrategy
 
         return DSPyStrategy()
     else:
         logger.info(
             "strategy_selected", type="LiteLLMStrategy", model=settings.llm.model
         )
-        from llm.strategy import LiteLLMStrategy
+        from src.llm.strategy import LiteLLMStrategy
 
         # Select appropriate API key based on model provider
         api_key = None
@@ -313,7 +314,7 @@ def create_strategy():
         )
 
 
-def create_crypto_provider():
+def create_crypto_provider() -> Any:
     """Create crypto payment provider if enabled.
 
     Returns:
@@ -330,7 +331,7 @@ def create_crypto_provider():
             network=settings.crypto.solana_network,
             currency=settings.crypto.currency,
         )
-        from crypto.solana_provider import SolanaProvider
+        from src.crypto.solana_provider import SolanaProvider
 
         return SolanaProvider(
             private_key_base58=get_raw_key(settings.crypto.solana_private_key),
@@ -343,7 +344,7 @@ def create_crypto_provider():
         return None
 
 
-async def serve():
+async def serve() -> None:
     from grpc_health.v1 import health
 
     # 1. Initialize gRPC Server early
@@ -403,8 +404,8 @@ async def serve():
     crypto_provider = create_crypto_provider()
     market_service = None
     if crypto_provider:
-        from crypto.encryption import SecretEncryption
-        from services.market import MarketService
+        from src.crypto.encryption import SecretEncryption
+        from src.services.market import MarketService
 
         encryption = SecretEncryption(
             get_raw_key(settings.crypto.secret_encryption_key)

@@ -2,7 +2,7 @@ from pydantic import AliasChoices, BaseModel, Field, HttpUrl
 
 
 class ServerSettings(BaseModel):
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec
     port: int = Field(
         50051, validation_alias=AliasChoices("AURA_SERVER__PORT", "GRPC_PORT")
     )
@@ -22,7 +22,7 @@ class ServerSettings(BaseModel):
         ),
     )
     otel_exporter_otlp_endpoint: HttpUrl = Field(
-        "http://jaeger:4317",
+        "http://jaeger:4317",  # type: ignore
         validation_alias=AliasChoices(
             "AURA_SERVER__OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_ENDPOINT"
         ),
@@ -30,7 +30,7 @@ class ServerSettings(BaseModel):
 
     # Monitoring
     prometheus_url: HttpUrl = Field(
-        "http://prometheus-kube-prometheus-prometheus.monitoring:9090",
+        "http://prometheus-kube-prometheus-prometheus.monitoring:9090",  # type: ignore
         validation_alias=AliasChoices("AURA_SERVER__PROMETHEUS_URL", "PROMETHEUS_URL"),
     )
 

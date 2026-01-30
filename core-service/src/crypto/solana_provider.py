@@ -4,7 +4,7 @@ Verifies SOL and USDC (SPL token) payments on Solana blockchain.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 FINALIZED_COMMITMENT = "finalized"  # ~32 slots confirmation (highest security)
 
 # SPL Token Program IDs
-TOKEN_PROGRAM_ID = "TokenkegQfeZyiNJbNbNbNbNbNbNbNbNbNbNbNbNbN"
-ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+TOKEN_PROGRAM_ID = "TokenkegQfeZyiNJbNbNbNbNbNbNbNbNbNbNbNbNbN"  # nosec
+ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"  # nosec
 
 # Amount tolerance for floating-point comparison (0.01%)
 AMOUNT_TOLERANCE = 0.0001
@@ -42,7 +42,7 @@ class SolanaProvider:
         rpc_url: str = "https://api.mainnet-beta.solana.com",
         network: str = "mainnet-beta",
         usdc_mint: str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    ):
+    ) -> None:
         """
         Initialize Solana provider.
 
@@ -227,7 +227,7 @@ class SolanaProvider:
             )
             return []
 
-        return data.get("result", [])
+        return data.get("result", [])  # type: ignore
 
     async def _get_transaction(self, signature: str) -> dict[str, Any] | None:
         """
@@ -260,7 +260,7 @@ class SolanaProvider:
         if "error" in data or not data.get("result"):
             return None
 
-        return data["result"]
+        return data["result"]  # type: ignore
 
     def _is_matching_payment(
         self,
@@ -469,11 +469,11 @@ class SolanaProvider:
             transaction_hash=signature,
             block_number=str(slot),
             from_address=from_address or "unknown",
-            confirmed_at=datetime.utcfromtimestamp(block_time)
+            confirmed_at=datetime.fromtimestamp(block_time, UTC)
             if block_time
-            else datetime.utcnow(),
+            else datetime.now(UTC),
         )
 
-    async def close(self):
+    async def close(self) -> None:
         """Closes the HTTP client connection."""
         await self.client.aclose()

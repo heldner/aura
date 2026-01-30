@@ -12,9 +12,10 @@ from typing import Any
 import dspy
 import litellm
 import structlog
-from llm.prepare.clean import clean_and_parse_json
-from llm.signatures import Negotiate
 from pydantic import BaseModel
+
+from src.llm.prepare.clean import clean_and_parse_json
+from src.llm.signatures import Negotiate
 
 logger = structlog.get_logger(__name__)
 
@@ -26,12 +27,14 @@ class AuraNegotiator(dspy.Module):
     based on economic context and training examples.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.negotiate_chain = dspy.ChainOfThought(Negotiate)
         logger.info("dspy_negotiator_initialized", module="AuraNegotiator")
 
-    def forward(self, input_bid: float, context: Any, history: Any = None) -> dict:
+    def forward(
+        self, input_bid: float, context: Any, history: Any = None
+    ) -> dict[str, Any]:
         """Forward pass for negotiation decision.
 
         Args:
@@ -183,7 +186,7 @@ class LLMEngine:
                     model=self.model,
                     structured=True,
                 )
-                return content
+                return content  # type: ignore
             else:
                 logger.info(
                     "llm_call_completed",
@@ -191,7 +194,7 @@ class LLMEngine:
                     structured=False,
                     response_length=len(content),
                 )
-                return content
+                return content  # type: ignore
 
         except litellm.AuthenticationError as e:
             logger.error(

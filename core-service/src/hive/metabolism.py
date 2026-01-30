@@ -1,8 +1,9 @@
 from typing import Any
 
 import structlog
-from hive.dna import Aggregator, Connector, Generator, Membrane, Transformer
 from opentelemetry import trace
+
+from src.hive.dna import Aggregator, Connector, Generator, Membrane, Transformer
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -56,7 +57,11 @@ class MetabolicLoop:
             with tracer.start_as_current_span("nucleotide_membrane_out") as m_out_span:
                 safe_decision = await self.membrane.inspect_outbound(decision, context)
                 if safe_decision != decision:
-                    logger.info("membrane_override_applied", original_price=decision.price, safe_price=safe_decision.price)
+                    logger.info(
+                        "membrane_override_applied",
+                        original_price=decision.price,
+                        safe_price=safe_decision.price,
+                    )
                     m_out_span.set_attribute("overridden", True)
 
                 m_out_span.set_attribute("final_action", safe_decision.action)

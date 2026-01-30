@@ -1,8 +1,9 @@
 import json
 import re
+from typing import Any
 
 
-def clean_and_parse_json(text: str) -> dict:
+def clean_and_parse_json(text: str) -> dict[str, Any]:
     """Clean response from Markdown and attempt to extract JSON.
 
     Handles various LLM response formats including:
@@ -22,7 +23,7 @@ def clean_and_parse_json(text: str) -> dict:
 
     # 2. Try direct JSON parsing
     try:
-        return json.loads(text)
+        return json.loads(text)  # type: ignore
     except json.JSONDecodeError:
         pass
 
@@ -31,7 +32,7 @@ def clean_and_parse_json(text: str) -> dict:
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         try:
-            return json.loads(match.group(0))
+            return json.loads(match.group(0))  # type: ignore
         except json.JSONDecodeError:
             pass
 
@@ -42,7 +43,7 @@ def clean_and_parse_json(text: str) -> dict:
     )
     if json_match:
         try:
-            return json.loads(json_match.group(2))
+            return json.loads(json_match.group(2))  # type: ignore
         except json.JSONDecodeError:
             pass
 
