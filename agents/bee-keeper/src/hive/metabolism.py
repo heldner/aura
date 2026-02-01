@@ -1,6 +1,6 @@
 import structlog
 
-from src.dna import (
+from src.hive.dna import (
     BeeAggregator,
     BeeConnector,
     BeeGenerator,
@@ -10,6 +10,7 @@ from src.dna import (
 )
 
 logger = structlog.get_logger(__name__)
+
 
 class BeeMetabolism:
     """
@@ -62,7 +63,7 @@ class BeeMetabolism:
         logger.info(
             "bee_metabolism_completed",
             is_pure=report.is_pure,
-            heresies_count=len(report.heresies)
+            heresies_count=len(report.heresies),
         )
 
         return observation

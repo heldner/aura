@@ -1,14 +1,13 @@
 import json
 import os
 import subprocess  # nosec
-from pathlib import Path
 from typing import Any
 
 import httpx
 import structlog
 
 from src.config import KeeperSettings
-from src.dna import BeeContext
+from src.hive.dna import BeeContext, find_hive_root
 
 logger = structlog.get_logger(__name__)
 
@@ -85,12 +84,11 @@ class BeeAggregator:
             return ""
 
     async def _get_hive_metrics(self) -> dict[str, Any]:
-        query = 'sum(rate(negotiation_accepted_total[5m])) / sum(rate(negotiation_total[5m]))'
+        query = "sum(rate(negotiation_accepted_total[5m])) / sum(rate(negotiation_total[5m]))"
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
-                    f"{self.prometheus_url}/api/v1/query",
-                    params={"query": query}
+                    f"{self.prometheus_url}/api/v1/query", params={"query": query}
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -105,12 +103,21 @@ class BeeAggregator:
     def _scan_filesystem(self) -> list[str]:
         filesystem_map = []
         # Scan from repository root
-        root_path = Path("../../")
+        root_path = find_hive_root()
+
+        # 1. Capture Root Structure (Top-level only) for Macro-ATCG check
+        for path in root_path.iterdir():
+            rel_path = path.relative_to(root_path)
+            filesystem_map.append(str(rel_path))
+
+        # 2. Capture all .py files recursively for deeper audits
         for path in root_path.rglob("*.py"):
             if ".venv" not in path.parts and "proto" not in path.parts:
                 # Store path relative to root
                 rel_path = path.relative_to(root_path)
-                filesystem_map.append(str(rel_path))
+                rel_path_str = str(rel_path)
+                if rel_path_str not in filesystem_map:
+                    filesystem_map.append(rel_path_str)
         return filesystem_map
 
     def _load_event_data(self) -> dict[str, Any]:

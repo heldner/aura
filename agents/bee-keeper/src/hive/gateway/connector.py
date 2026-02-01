@@ -6,7 +6,7 @@ import nats.errors
 import structlog
 
 from src.config import KeeperSettings
-from src.dna import BeeContext, BeeObservation, PurityReport
+from src.hive.dna import BeeContext, BeeObservation, PurityReport, find_hive_root
 from src.hive.proteins.gh_client import GitHubClient
 
 logger = structlog.get_logger(__name__)
@@ -51,11 +51,13 @@ class BeeConnector:
             success=len(injuries) == 0,
             github_comment_url=comment_url,
             nats_event_sent=nats_sent,
-            injuries=injuries
+            injuries=injuries,
         )
 
     async def _commit_changes(self) -> None:
         import subprocess  # nosec
+
+        root = find_hive_root()
 
         def git_commit() -> None:
             try:
@@ -65,6 +67,7 @@ class BeeConnector:
                     capture_output=True,
                     text=True,
                     check=False,
+                    cwd=str(root),
                 )  # nosec
                 if not status.stdout:
                     logger.info("no_changes_to_commit")
@@ -72,7 +75,9 @@ class BeeConnector:
 
                 logger.info("committing_changes", files=status.stdout.splitlines())
                 subprocess.run(
-                    ["git", "add", "../../HIVE_STATE.md", "../../llms.txt"], check=False
+                    ["git", "add", "HIVE_STATE.md", "llms.txt"],
+                    check=False,
+                    cwd=str(root),
                 )  # nosec
                 subprocess.run(
                     [
@@ -82,8 +87,9 @@ class BeeConnector:
                         "chore(hive): auto-update hive state [skip ci]",
                     ],
                     check=False,
+                    cwd=str(root),
                 )  # nosec
-                subprocess.run(["git", "push"], check=False)  # nosec
+                subprocess.run(["git", "push"], check=False, cwd=str(root))  # nosec
                 logger.info("changes_pushed_successfully")
             except Exception as e:
                 logger.warning("git_commit_failed", error=str(e))
@@ -108,10 +114,7 @@ class BeeConnector:
 
         # Use the GitHubClient protein
         url = await self.gh.post_comment(
-            repo=self.repo_name,
-            issue_number=pr_num,
-            commit_sha=sha,
-            body=message
+            repo=self.repo_name, issue_number=pr_num, commit_sha=sha, body=message
         )
         return url
 
@@ -134,7 +137,9 @@ class BeeConnector:
 
         return msg
 
-    async def _emit_nats_event(self, report: PurityReport, context: BeeContext, injuries: list[str]) -> bool:
+    async def _emit_nats_event(
+        self, report: PurityReport, context: BeeContext, injuries: list[str]
+    ) -> bool:
         try:
             # Use connect_timeout to prevent hanging if NATS is unreachable
             nc = await nats.connect(self.nats_url, connect_timeout=5.0)
@@ -144,7 +149,7 @@ class BeeConnector:
                 "is_pure": report.is_pure,
                 "heresies_count": len(report.heresies),
                 "timestamp": now,
-                "injuries": injuries
+                "injuries": injuries,
             }
             await nc.publish("aura.hive.audit", json.dumps(payload).encode())
 
@@ -152,9 +157,11 @@ class BeeConnector:
                 injury_payload = {
                     "agent": "bee.Keeper",
                     "injuries": injuries,
-                    "timestamp": now
+                    "timestamp": now,
                 }
-                await nc.publish("aura.hive.injury", json.dumps(injury_payload).encode())
+                await nc.publish(
+                    "aura.hive.injury", json.dumps(injury_payload).encode()
+                )
 
             await nc.close()
             return True

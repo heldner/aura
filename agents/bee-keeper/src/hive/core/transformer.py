@@ -6,7 +6,13 @@ import structlog
 import yaml  # type: ignore
 
 from src.config import KeeperSettings
-from src.dna import BeeContext, PurityReport
+from src.hive.dna import (
+    ALLOWED_ROOT_FILES,
+    MACRO_ATCG_FOLDERS,
+    BeeContext,
+    PurityReport,
+    find_hive_root,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -18,8 +24,9 @@ class BeeTransformer:
         self.settings = settings
         self.model = settings.llm__model
         litellm.api_key = settings.llm__api_key
+        root = find_hive_root()
 
-        prompt_path = Path("prompts/bee_keeper.md")
+        prompt_path = root / "agents/bee-keeper/prompts/bee_keeper.md"
         self.persona = (
             prompt_path.read_text()
             if prompt_path.exists()
@@ -27,7 +34,7 @@ class BeeTransformer:
         )
 
         # Load manifest
-        manifest_path = Path("hive-manifest.yaml")
+        manifest_path = root / "agents/bee-keeper/hive-manifest.yaml"
         if manifest_path.exists():
             with open(manifest_path) as f:
                 self.manifest = yaml.safe_load(f)
@@ -63,10 +70,35 @@ class BeeTransformer:
 
     def _deterministic_audit(self, context: BeeContext) -> list[str]:
         heresies = []
-        core_path = self.manifest.get("hive", {}).get("core_path", "core-service/src/hive")
+        core_path = self.manifest.get("hive", {}).get(
+            "core_path", "core-service/src/hive"
+        )
         allowed_files = self.manifest.get("hive", {}).get("allowed_files", [])
 
-        # 1. Structural Check
+        # 1. Macro-ATCG (Root) Check
+        for item in context.filesystem_map:
+            p = Path(item)
+            # Only check top-level items
+            if p.parent == Path("."):
+                name = p.name
+                # Ignore hidden files and standard directories
+                if name.startswith(".") or name in [
+                    ".git",
+                    ".github",
+                    ".venv",
+                    ".vscode",
+                ]:
+                    continue
+
+                is_macro_folder = name in MACRO_ATCG_FOLDERS
+                is_allowed_file = name in ALLOWED_ROOT_FILES
+
+                if not (is_macro_folder or is_allowed_file):
+                    heresies.append(
+                        f"Root Heresy: '{name}' is a foreign sprout in the project root. Move it to a Nucleotide or the Tool-Shed."
+                    )
+
+        # 2. Structural Check (Core Nucleotides)
         for file_path in context.filesystem_map:
             p = Path(file_path)
             if str(p.parent) == core_path:
@@ -75,13 +107,26 @@ class BeeTransformer:
                         f"Structural Heresy: '{p.name}' is an unauthorized growth in the core nucleotides."
                     )
 
-        # 2. Pattern Enforcement (No raw print or os.getenv in diff)
+        # 3. Pattern Enforcement (No raw print or os.getenv in diff)
         diff_lines = context.git_diff.splitlines()
+        current_file = ""
         for line in diff_lines:
+            if line.startswith("+++ b/"):
+                current_file = line[6:]
+                continue
+
             if line.startswith("+") and not line.startswith("+++"):
                 added_code = line[1:].strip()
                 # Ignore comments
-                if added_code.startswith("#") or added_code.startswith('"""') or added_code.startswith("'''"):
+                if (
+                    added_code.startswith("#")
+                    or added_code.startswith('"""')
+                    or added_code.startswith("'''")
+                ):
+                    continue
+
+                # Skip pattern check for the transformer itself to avoid false positives on rule definitions
+                if "transformer.py" in current_file:
                     continue
 
                 if "print(" in added_code and "logger" not in added_code:
@@ -157,7 +202,9 @@ class BeeTransformer:
             logger.warning("diff_summarization_failed", error=str(e))
             return "Large diff (could not summarize)."
 
-    async def _call_llm(self, prompt: str, use_fallback: bool = False) -> dict[str, Any]:
+    async def _call_llm(
+        self, prompt: str, use_fallback: bool = False
+    ) -> dict[str, Any]:
         model = self.settings.llm__fallback_model if use_fallback else self.model
         kwargs: dict[str, Any] = {
             "model": model,
