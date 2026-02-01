@@ -50,7 +50,7 @@ jobs:
           AURA_LLM__MODEL: "gpt-4o-mini"
           AURA_LLM__FALLBACK_MODEL: "ollama/llama3"
           AURA_LLM__OLLAMA_BASE_URL: "http://localhost:11434"
-          AURA_PROMETHEUS_URL: "http://prometheus-kube-prometheus-prometheus.monitoring:9090"
+          AURA_PROMETHEUS_URL: "http://monitoring-kube-prometheus-prometheus.monitoring:9090"
           AURA_NATS_URL: "nats://nats:4222"
           AURA_BEE_KEEPER__MAX_TOKENS: 1000
         run: |
