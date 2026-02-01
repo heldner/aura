@@ -45,3 +45,12 @@ execution_time: 1.5s
 token_usage: 120
 event: manual
 -->
+
+## 🧬 Active Mutations`
+- [/] Task 24: bee.Chronicler Initialization - Status: AWAKENING`
+
+## 🧱 Architectural Debt (Backlog)
+- [ ] **Task 16: The Membrane.** (Sit between T and C to block $1 deals).
+- [ ] **Task 17: External Oracles.** (Connect A to real hotel APIs).
+- [ ] **Task 39: The Patient Bee.** (Increase gRPC timeouts to 30s for LLM reasoning).
+- [ ] **Task 40/41: Total Fractalization.** (Refactor Bot and MCP to 100% ATCG).
