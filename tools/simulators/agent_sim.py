@@ -2,9 +2,10 @@ import time
 
 import requests
 import structlog
-from agent_identity import AgentWallet
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+from tools.simulators.agent_identity import AgentWallet
 
 load_dotenv()
 

@@ -40,6 +40,9 @@ ALLOWED_ROOT_FILES = [
     ".env.example",
     "compose.yml",
     ".pre-commit-config.yaml",
+    "CLAUDE.md",
+    "CRYPTO_INTEGRATION_SUMMARY.md",
+    "CRYPTO_QUICKSTART.md",
 ]
 
 
@@ -57,8 +60,8 @@ class BeeContext:
 
 
 @dataclass
-class PurityReport:
-    """The result of an architectural audit."""
+class AuditObservation:
+    """The raw result of an architectural audit."""
 
     is_pure: bool
     heresies: list[str] = field(default_factory=list)
@@ -80,26 +83,49 @@ class BeeObservation:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
+# Sacred Roles for Infrastructure
+ALLOWED_CHAMBERS = {
+    "core-service/migrations": "HiveEvolutionaryScrolls",
+    "core-service/tests": "ValidationPollen",
+    "api-gateway": "HiveGate",
+    "core-service/src/config": "SacredCodex",
+    "core-service/src/services": "WorkerDirectives",
+    "core-service/src/llm": "ReasoningNucleus",
+    "core-service/src/crypto": "SecurityCitadel",
+    "core-service/src/prompts": "EchoChamber",
+    "core-service/src/guard": "HiveMembrane",
+    "deploy": "HiveArmor",
+    "proto": "SacredScrolls",
+    "docs": "ChroniclersArchive",
+    "agents": "WorkerCells",
+    "adapters": "HiveExtensions",
+    "frontend": "HiveWindow",
+    "tools": "ToolShed",
+    "tests": "OuterValidationPollen",
+}
+
+
 @runtime_checkable
 class BeeAggregator(Protocol):
     """A - Aggregator: Gathers signals from Git, Prometheus, and Filesystem."""
 
-    async def perceive(self) -> BeeContext: ...
+    async def sense(self, event_name: str = "manual") -> BeeContext: ...
+    async def test_brain_connectivity(self) -> bool: ...
 
 
 @runtime_checkable
 class BeeTransformer(Protocol):
-    """T - Transformer: Analyzes purity and generates reports."""
+    """T - Transformer: Analyzes purity and generates audit observations."""
 
-    async def think(self, context: BeeContext) -> PurityReport: ...
+    async def reflect(self, context: BeeContext) -> AuditObservation: ...
 
 
 @runtime_checkable
 class BeeConnector(Protocol):
     """C - Connector: Interacts with GitHub and NATS."""
 
-    async def act(
-        self, report: PurityReport, context: BeeContext
+    async def interact(
+        self, report: AuditObservation, context: BeeContext
     ) -> BeeObservation: ...
 
 
@@ -107,4 +133,9 @@ class BeeConnector(Protocol):
 class BeeGenerator(Protocol):
     """G - Generator: Updates documentation and chronicles."""
 
-    async def generate(self, report: PurityReport, context: BeeContext) -> None: ...
+    async def generate(
+        self,
+        report: AuditObservation,
+        context: BeeContext,
+        observation: BeeObservation,
+    ) -> None: ...

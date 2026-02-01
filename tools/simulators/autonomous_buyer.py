@@ -2,9 +2,10 @@ import time
 
 import requests
 import structlog
-from agent_identity import AgentWallet
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+from tools.simulators.agent_identity import AgentWallet
 
 load_dotenv()
 
@@ -54,7 +55,7 @@ class AutonomousBuyer:
         headers = self._get_security_headers("POST", "/v1/search", payload)
 
         resp = requests.post(
-            f"{GATEWAY}/search", json=payload, headers=headers, timeout=30
+            f"{GATEWAY}/v1/search", json=payload, headers=headers, timeout=30
         )
         results = resp.json().get("results", [])
 
@@ -95,7 +96,7 @@ class AutonomousBuyer:
 
             # Если есть сессия, могли бы передавать, но у нас stateless пока
             resp = requests.post(
-                f"{GATEWAY}/negotiate", json=payload, headers=headers, timeout=30
+                f"{GATEWAY}/v1/negotiate", json=payload, headers=headers, timeout=30
             )
             data = resp.json()
             status = data.get("status")

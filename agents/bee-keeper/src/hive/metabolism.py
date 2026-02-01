@@ -1,69 +1,60 @@
+import time
 import structlog
 
-from src.hive.dna import (
-    BeeAggregator,
-    BeeConnector,
-    BeeGenerator,
-    BeeObservation,
-    BeeTransformer,
-    PurityReport,
-)
+from src.config import KeeperSettings
+from src.hive.core.aggregator import BeeAggregator
+from src.hive.gateway.connector import BeeConnector
+from src.hive.core.transformer import BeeTransformer
+from src.hive.dna import BeeContext, AuditObservation
+from src.hive.scribe.generator import BeeGenerator
 
 logger = structlog.get_logger(__name__)
 
 
 class BeeMetabolism:
-    """
-    Orchestrates the ATCG flow for the BeeKeeper agent:
-    A (Aggregator) -> T (Transformer) -> C (Connector) -> G (Generator)
-    """
+    """Orchestrates the ATCG flow for the bee.Keeper agent."""
 
-    def __init__(
-        self,
-        aggregator: BeeAggregator,
-        transformer: BeeTransformer,
-        connector: BeeConnector,
-        generator: BeeGenerator,
-    ):
-        self.aggregator = aggregator
-        self.transformer = transformer
-        self.connector = connector
-        self.generator = generator
+    def __init__(self, settings: KeeperSettings) -> None:
+        self.settings = settings
+        self.aggregator = BeeAggregator(settings)
+        self.transformer = BeeTransformer(settings)
+        self.connector = BeeConnector(settings)
+        self.generator = BeeGenerator(settings)
 
-    async def execute(self) -> BeeObservation:
-        """Execute one full metabolic cycle of the BeeKeeper."""
-        import time
-
-        logger.info("bee_metabolism_started")
+    async def execute(self, event_name: str = "scheduled_pulse") -> None:
+        """Execute one complete metabolic cycle."""
+        logger.info("bee_metabolism_started", trigger_event=event_name)
         start_time = time.time()
 
-        # 1. Aggregator (A) - Perceive/Sense
-        context = await self.aggregator.perceive()
+        # 1. Aggregator (A) - Senses the environment
+        context: BeeContext = await self.aggregator.sense(event_name)
 
-        # 2. Transformer (T) - Think/Reason
-        if context.event_name == "schedule":
+        # 2. Transformer (T) - Reasons and audits
+        # Optimization: Skip LLM audit on scheduled heartbeats unless heresy is suspected?
+        # Actually, let's honor the original skip logic if event is "schedule"
+        if event_name == "schedule":
             logger.info("scheduled_heartbeat_detected_skipping_llm_audit")
-            report = PurityReport(
+            report = AuditObservation(
                 is_pure=True,
                 narrative="The Keeper performs a routine inspection. The Hive's pulse is steady.",
                 reasoning="Scheduled heartbeat run. LLM audit skipped to save honey.",
                 metadata={"heartbeat": True},
             )
         else:
-            report = await self.transformer.think(context)
+            # T now performs deterministic regex audit + reflective LLM analysis
+            report = await self.transformer.reflect(context)
 
         report.execution_time = time.time() - start_time
 
-        # 3. Connector (C) - Act/Output
-        observation = await self.connector.act(report, context)
+        # 3. Connector (C) - Interacts with the outer world (GitHub)
+        observation = await self.connector.interact(report, context)
 
-        # 4. Generator (G) - Generate/Chronicle
+        # 4. Generator (G) - Updates records and chronicles
         await self.generator.generate(report, context, observation)
 
         logger.info(
             "bee_metabolism_completed",
-            is_pure=report.is_pure,
-            heresies_count=len(report.heresies),
+            pure=report.is_pure,
+            heresies=len(report.heresies),
+            execution_time=f"{report.execution_time:.2f}s",
         )
-
-        return observation

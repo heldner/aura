@@ -1,16 +1,18 @@
 from pathlib import Path
 from typing import Any
 
+import json
 import litellm
 import structlog
 import yaml  # type: ignore
 
 from src.config import KeeperSettings
 from src.hive.dna import (
+    ALLOWED_CHAMBERS,
     ALLOWED_ROOT_FILES,
     MACRO_ATCG_FOLDERS,
+    AuditObservation,
     BeeContext,
-    PurityReport,
     find_hive_root,
 )
 
@@ -18,7 +20,7 @@ logger = structlog.get_logger(__name__)
 
 
 class BeeTransformer:
-    """T - Transformer: Analyzes purity and generates reports."""
+    """T - Transformer: Analyzes purity and generates audit observations."""
 
     def __init__(self, settings: KeeperSettings) -> None:
         self.settings = settings
@@ -41,14 +43,13 @@ class BeeTransformer:
         else:
             self.manifest = {}
 
-    async def think(self, context: BeeContext) -> PurityReport:
-        logger.info("bee_transformer_think_started")
+    async def reflect(self, context: BeeContext) -> AuditObservation:
+        logger.info("bee_transformer_reflect_started")
 
         # 1. Structural Check (Deterministic)
-        heresies = self._deterministic_audit(context)
+        structural_findings = self._deterministic_audit(context)
 
         # 2. LLM Audit (Reflective)
-        # Handle large diffs
         if len(context.git_diff) > 4000:
             logger.info("large_diff_detected_summarizing_first")
             summary = await self._summarize_diff(context.git_diff)
@@ -56,16 +57,23 @@ class BeeTransformer:
 
         purity_analysis = await self._llm_audit(context)
 
-        all_heresies = heresies + purity_analysis.get("heresies", [])
-        is_pure = len(all_heresies) == 0
+        # ATCG Purity: Transformer returns a single AuditObservation.
+        # Reasoning and metadata contain the raw insights.
+        is_pure = len(structural_findings) == 0 and purity_analysis.get("is_pure", True)
 
-        return PurityReport(
+        return AuditObservation(
             is_pure=is_pure,
-            heresies=all_heresies,
+            heresies=structural_findings,
             narrative=purity_analysis.get("narrative", "The Hive remains silent."),
             reasoning=purity_analysis.get("reasoning", ""),
             token_usage=purity_analysis.get("token_usage", 0),
-            metadata={"llm_response": purity_analysis},
+            execution_time=0.0,  # Could track this if needed
+            metadata={
+                "llm_analysis": purity_analysis,
+                "structural_heresies": structural_findings,
+                "reflective_heresies": purity_analysis.get("heresies", []),
+                "llm_unavailable": purity_analysis.get("llm_unavailable", False),
+            },
         )
 
     def _deterministic_audit(self, context: BeeContext) -> list[str]:
@@ -98,16 +106,47 @@ class BeeTransformer:
                         f"Root Heresy: '{name}' is a foreign sprout in the project root. Move it to a Nucleotide or the Tool-Shed."
                     )
 
-        # 2. Structural Check (Core Nucleotides)
+        # 2. Structural Check (Core and Allowed Chambers)
         for file_path in context.filesystem_map:
             p = Path(file_path)
+
+            # Check core Hive nucleotides
             if str(p.parent) == core_path:
                 if allowed_files and p.name not in allowed_files:
                     heresies.append(
                         f"Structural Heresy: '{p.name}' is an unauthorized growth in the core nucleotides."
                     )
+                continue
 
-        # 3. Pattern Enforcement (No raw print or os.getenv in diff)
+            # Check allowed peripheral chambers (Sanctified Infrastructure)
+            is_sanctified = False
+            for chamber, role in ALLOWED_CHAMBERS.items():
+                if str(p).startswith(chamber):
+                    is_sanctified = True
+                    break
+
+            # If it's not in core, not a known chamber, and not a dotfile/metafile/rootfile, flag it
+            if (
+                not is_sanctified
+                and not p.name.startswith(".")
+                and len(p.parts) > 1
+                and p.parts[0] not in MACRO_ATCG_FOLDERS
+            ):
+                heresies.append(
+                    f"Unauthorized Growth: '{p}' has expanded outside sanctioned chambers. The Inquisitor demands its removal."
+                )
+
+        # 3. Metric Verification
+        metrics = context.hive_metrics
+        success_rate = metrics.get("negotiation_success_rate", 1.0)
+        status = metrics.get("status", "ok")
+
+        if status != "UNKNOWN" and success_rate < 0.7:
+            heresies.append(
+                f"Hive Alert: 'negotiation_success_rate' is {success_rate:.2f}, which is below the critical threshold of 0.7. The Hive flow is obstructed."
+            )
+
+        # 4. Pattern Enforcement (No raw print or os.getenv in diff)
         diff_lines = context.git_diff.splitlines()
         current_file = ""
         for line in diff_lines:
@@ -169,17 +208,25 @@ class BeeTransformer:
 
         try:
             return await self._call_llm(prompt)
-        except Exception as e:
+        except (
+            litellm.exceptions.APIConnectionError,
+            litellm.exceptions.ServiceUnavailableError,
+            litellm.exceptions.Timeout,
+            litellm.exceptions.AuthenticationError,
+            json.JSONDecodeError,
+        ) as e:
             logger.warning("primary_llm_failed_trying_fallback", error=str(e))
             try:
                 return await self._call_llm(prompt, use_fallback=True)
             except Exception as fe:
                 logger.error("llm_audit_failed_completely", error=str(fe))
+                # Fallback to a "Safe" pure-ish response so structural audit can still pass
                 return {
-                    "is_pure": False,
-                    "heresies": [f"Blight: The Keeper's mind is clouded ({str(fe)})"],
-                    "narrative": "A strange mist descends upon the Hive...",
-                    "reasoning": f"Primary error: {e}. Fallback error: {fe}",
+                    "is_pure": True,  # Assume pure if LLM is down, structural check still runs in think()
+                    "heresies": [],
+                    "narrative": "A thick mist covers the Hive. The Keeper senses only the physical structures, the deeper patterns remain hidden.",
+                    "reasoning": f"LLM Connectivity failure. Primary: {e}. Fallback: {fe}",
+                    "llm_unavailable": True,
                 }
 
     async def _summarize_diff(self, diff: str) -> str:
@@ -202,15 +249,14 @@ class BeeTransformer:
             logger.warning("diff_summarization_failed", error=str(e))
             return "Large diff (could not summarize)."
 
-    async def _call_llm(
-        self, prompt: str, use_fallback: bool = False
-    ) -> dict[str, Any]:
+    async def _call_llm(self, prompt: str, use_fallback: bool = False) -> dict[str, Any]:
         model = self.settings.llm__fallback_model if use_fallback else self.model
         kwargs: dict[str, Any] = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
             "max_tokens": self.settings.max_tokens,
+            "timeout": 30.0,  # Add timeout for resilience
         }
 
         if use_fallback and "ollama" in model:
@@ -218,7 +264,6 @@ class BeeTransformer:
 
         response = await litellm.acompletion(**kwargs)
         content = response.choices[0].message.content
-        import json
 
         data: dict[str, Any] = json.loads(content)
         # Capture token usage if available

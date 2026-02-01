@@ -2,7 +2,13 @@ import litellm
 import structlog
 
 from src.config import KeeperSettings
-from src.hive.dna import BeeContext, BeeObservation, PurityReport, find_hive_root
+from src.hive.dna import (
+    ALLOWED_CHAMBERS,
+    AuditObservation,
+    BeeContext,
+    BeeObservation,
+    find_hive_root,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -23,7 +29,10 @@ class BeeGenerator:
         )
 
     async def generate(
-        self, report: PurityReport, context: BeeContext, observation: BeeObservation
+        self,
+        report: AuditObservation,
+        context: BeeContext,
+        observation: BeeObservation,
     ) -> None:
         logger.info("bee_generator_generate_started")
 
@@ -75,7 +84,10 @@ class BeeGenerator:
             logger.error("llms_txt_sync_failed", error=str(e))
 
     async def _update_hive_state(
-        self, report: PurityReport, context: BeeContext, observation: BeeObservation
+        self,
+        report: AuditObservation,
+        context: BeeContext,
+        observation: BeeObservation,
     ) -> None:
         root = find_hive_root()
         state_path = root / "HIVE_STATE.md"
@@ -89,18 +101,37 @@ class BeeGenerator:
         metrics = context.hive_metrics
         success_rate = metrics.get("negotiation_success_rate", 0.0)
 
+        # Formatting Blight vs Heresy
+        # If all LLMs failed, it's a Blight
+        llm_unavailable = report.metadata.get("llm_unavailable", False)
+        status_label = "PURE" if report.is_pure else "IMPURE"
+        if llm_unavailable and not report.is_pure:
+            status_label = "BLIGHTED"
+
         new_entry = f"## Audit: {now}\n\n"
-        new_entry += f"**Status:** {'PURE' if report.is_pure else 'IMPURE'}\n"
+        new_entry += f"**Status:** {status_label}\n"
         new_entry += f"**Negotiation Success Rate:** {success_rate:.2f}\n\n"
         new_entry += f"> {report.narrative}\n\n"
 
         if report.heresies:
-            new_entry += "**Heresies Detected:**\n"
+            new_entry += "**Heresies Detected (Sacred Chambers):**\n"
             for h in report.heresies:
-                new_entry += f"- {h}\n"
+                # Map paths to roles if present in heresy string
+                formatted_h = h
+                for path, role in ALLOWED_CHAMBERS.items():
+                    if path in h:
+                        formatted_h = h.replace(path, f"{path} ({role})")
+                new_entry += f"- {formatted_h}\n"
+
+        # Chronicle reflective findings isolated from the Transformer's deterministic logic
+        reflective_heresies = report.metadata.get("reflective_heresies", [])
+        if reflective_heresies:
+            new_entry += "\n**Reflective Insights (The Inquisitor's Eye):**\n"
+            for rh in reflective_heresies:
+                new_entry += f"- {rh}\n"
 
         if observation.injuries:
-            new_entry += "\n**🤕 Injuries (Failures):**\n"
+            new_entry += "\n**🤕 Injuries (Physical Blockages):**\n"
             for injury in observation.injuries:
                 new_entry += f"- {injury}\n"
 
@@ -108,24 +139,13 @@ class BeeGenerator:
         new_entry += f"\n<!-- metadata\nexecution_time: {report.execution_time:.2f}s\ntoken_usage: {report.token_usage}\nevent: {context.event_name}\n-->\n"
         new_entry += "\n---\n\n"
 
-        # Idempotency check (compare narrative and heresies)
-        if report.narrative in current_content and all(
-            h in current_content for h in report.heresies
-        ):
-            # Also check if metrics changed significantly?
-            # For now, let's just check if the last entry is basically the same.
-            # Actually, just appending for now as chronicles should be a log.
-            # User said: "The Generator (G) must only produce a new version of HIVE_STATE.md if the actual metrics or task statuses have changed."
-            pass
-
-        # To keep it simple and fulfill the log nature, we append, but we could replace the whole file
-        # if we want a "current state" view. User said "update resource stats in HIVE_STATE.md".
-        # Let's rebuild the file header + current status + audit log.
-
+        # To keep it simple and fulfill the log nature, we rebuild the file header + current status + audit log.
         full_content = "# Aura Hive State\n\n"
         full_content += f"**Last Pulse:** {now}\n"
         full_content += f"**Current Success Rate:** {success_rate:.2f}\n"
-        full_content += f"**Governance Cost (Last):** {report.token_usage} tokens / {report.execution_time:.2f}s\n\n"
+        full_content += (
+            f"**Governance Cost (Last):** {report.token_usage} tokens / {report.execution_time:.2f}s\n\n"
+        )
         full_content += "## Audit Log\n\n"
         full_content += new_entry
 
