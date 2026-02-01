@@ -10,7 +10,8 @@
 
 **Status:** IMPURE
 **Negotiation Success Rate:** 0.00
-
+## 🔋 System Vitals (Senses)
+- **Transformer (T):** 🔴 CLOUDED. Connection to Ollama failed. Fallback to remote API pending.
 > A strange mist descends upon the Hive...
 
 **Heresies Detected:**
