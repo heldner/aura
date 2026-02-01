@@ -4,7 +4,7 @@ import litellm
 import structlog
 
 from src.config import KeeperSettings
-from src.dna import BeeContext, PurityReport
+from src.dna import BeeContext, BeeObservation, PurityReport
 
 logger = structlog.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class BeeGenerator:
             else "You are bee.Keeper, guardian of the Aura Hive."
         )
 
-    async def generate(self, report: PurityReport, context: BeeContext) -> None:
+    async def generate(self, report: PurityReport, context: BeeContext, observation: BeeObservation) -> None:
         logger.info("bee_generator_generate_started")
 
         # 1. Update llms.txt if needed
@@ -32,7 +32,7 @@ class BeeGenerator:
             await self._update_llms_txt(context)
 
         # 2. Update HIVE_STATE.md
-        await self._update_hive_state(report, context)
+        await self._update_hive_state(report, context, observation)
 
     async def _update_llms_txt(self, context: BeeContext) -> None:
         llms_txt_path = Path("../../llms.txt")
@@ -73,7 +73,7 @@ class BeeGenerator:
         except Exception as e:
             logger.error("llms_txt_sync_failed", error=str(e))
 
-    async def _update_hive_state(self, report: PurityReport, context: BeeContext) -> None:
+    async def _update_hive_state(self, report: PurityReport, context: BeeContext, observation: BeeObservation) -> None:
         state_path = Path("../../HIVE_STATE.md")
         current_content = state_path.read_text() if state_path.exists() else ""
 
@@ -84,20 +84,9 @@ class BeeGenerator:
         metrics = context.hive_metrics
         success_rate = metrics.get("negotiation_success_rate", 0.0)
 
-        # Calculate Heresy Density
-        changed_files = {
-            line[6:]
-            for line in context.git_diff.splitlines()
-            if line.startswith("+++ b/")
-        }
-        files_changed_count = len(changed_files) or 1
-        total_heresies = report.metadata.get("total_heresies", len(report.heresies))
-        heresy_density = total_heresies / files_changed_count
-
         new_entry = f"## Audit: {now}\n\n"
         new_entry += f"**Status:** {'PURE' if report.is_pure else 'IMPURE'}\n"
-        new_entry += f"**Negotiation Success Rate:** {success_rate:.2f}\n"
-        new_entry += f"**Heresy Density:** {heresy_density:.2f}\n\n"
+        new_entry += f"**Negotiation Success Rate:** {success_rate:.2f}\n\n"
         new_entry += f"> {report.narrative}\n\n"
 
         if report.heresies:
@@ -105,15 +94,13 @@ class BeeGenerator:
             for h in report.heresies:
                 new_entry += f"- {h}\n"
 
+        if observation.injuries:
+            new_entry += "\n**🤕 Injuries (Failures):**\n"
+            for injury in observation.injuries:
+                new_entry += f"- {injury}\n"
+
         # Hidden metadata for "Cost of Governance"
-        new_entry += (
-            f"\n<!-- metadata\n"
-            f"execution_time: {report.execution_time:.2f}s\n"
-            f"token_usage: {report.token_usage}\n"
-            f"heresy_density: {heresy_density:.2f}\n"
-            f"event: {context.event_name}\n"
-            f"-->\n"
-        )
+        new_entry += f"\n<!-- metadata\nexecution_time: {report.execution_time:.2f}s\ntoken_usage: {report.token_usage}\nevent: {context.event_name}\n-->\n"
         new_entry += "\n---\n\n"
 
         # Idempotency check (compare narrative and heresies)

@@ -41,23 +41,44 @@ class BeeAggregator:
 
     async def _get_git_diff(self) -> str:
         try:
-            # Try to get diff between HEAD~1 and HEAD
+            # Try to get diff between HEAD~1 and HEAD, excluding meta files
             result = subprocess.run(
-                ["git", "diff", "--unified=0", "HEAD~1", "HEAD"],
+                [
+                    "git",
+                    "diff",
+                    "--unified=0",
+                    "HEAD~1",
+                    "HEAD",
+                    "--",
+                    ".",
+                    ":!HIVE_STATE.md",
+                    ":!CHRONICLES.md",
+                    ":!llms.txt",
+                ],
                 capture_output=True,
                 text=True,
-                check=False
-            ) # nosec
+                check=False,
+            )  # nosec
             if result.returncode == 0:
                 return result.stdout
 
             # Fallback for shallow clones or initial commit
             result = subprocess.run(
-                ["git", "show", "--unified=0", "HEAD"],
+                [
+                    "git",
+                    "show",
+                    "--unified=0",
+                    "HEAD",
+                    "--",
+                    ".",
+                    ":!HIVE_STATE.md",
+                    ":!CHRONICLES.md",
+                    ":!llms.txt",
+                ],
                 capture_output=True,
                 text=True,
-                check=False
-            ) # nosec
+                check=False,
+            )  # nosec
             return result.stdout
         except Exception as e:
             logger.warning("git_diff_failed", error=str(e))
@@ -85,12 +106,11 @@ class BeeAggregator:
         filesystem_map = []
         # Scan from repository root
         root_path = Path("../../")
-        for path in root_path.rglob("*"):
-            if path.is_file() and path.suffix in [".py", ".md"]:
-                if ".venv" not in path.parts and "proto" not in path.parts:
-                    # Store path relative to root
-                    rel_path = path.relative_to(root_path)
-                    filesystem_map.append(str(rel_path))
+        for path in root_path.rglob("*.py"):
+            if ".venv" not in path.parts and "proto" not in path.parts:
+                # Store path relative to root
+                rel_path = path.relative_to(root_path)
+                filesystem_map.append(str(rel_path))
         return filesystem_map
 
     def _load_event_data(self) -> dict[str, Any]:
