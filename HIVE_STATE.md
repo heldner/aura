@@ -138,3 +138,7 @@ event: manual
 - [ ] **Task 17: External Oracles.** (Connect A to real hotel APIs).
 - [ ] **Task 39: The Patient Bee.** (Increase gRPC timeouts to 30s for LLM reasoning).
 - [ ] **Task 40/41: Total Fractalization.** (Refactor Bot and MCP to 100% ATCG).
+
+## 🔋 System Vitals (Senses)
+- **Transformer (T):** 🟡 DEGRADED. Mistral is OK, but OpenAI fallback returned 401 (Auth Error).
+- **Metabolism:** 🟢 ACTIVE (but vulnerable).
