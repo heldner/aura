@@ -175,6 +175,8 @@ event: manual
   - *Status:* ✍️ SCRIBING (Remediation started).
 
 ## 🧱 Architectural Debt
+- [x] Establish Visual Reasoning Layer.
+- [ ] Finalize total structural fractalization (Waiting for Jules).
 - [ ] Establish Visual Reasoning Layer (PR #69).
 - [ ] Implement NATS Bloodstream Visualization (Backlog).
 - [ ] Move `aura_brain.json` to a persistent /data/ volume (Planned).
@@ -193,6 +195,8 @@ event: manual
 - **Connector (C):** 🟢 PULSING. (NATS connected).
 - **Storage:** 🔴 CRITICAL (40GB consumed by Minikube internal storage).
 - **Metabolism:** 🔴 OBSTRUCTED. Garbage collection is missing.
+- **Visual Cortex:** 🟢 ACTIVE. (Rosetta Stone implemented. ATCG-M diagrams ready).
+- **Documentation Alignment:** 🟢 PURE. (No phantom references).
 
 ## 💰 Economy (The Pivot)
 - [ ] **Shift from Travel to Compute:** Implement "Thought-Trading" protocol.
