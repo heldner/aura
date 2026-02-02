@@ -188,3 +188,11 @@ event: manual
 - **Connector (C):** 🟢 PULSING. (NATS connected).
 - **Storage:** 🔴 CRITICAL (40GB consumed by Minikube internal storage).
 - **Metabolism:** 🔴 OBSTRUCTED. Garbage collection is missing.
+
+## 💰 Economy (The Pivot)
+- [ ] **Shift from Travel to Compute:** Implement "Thought-Trading" protocol.
+- [ ] **Asset Definition:** API Credits & Code Artifacts.
+- [ ] **Unit of Account:** SOL / Stars.
+
+## 🐝 Emergent Entities
+- **bee.Claude:** Incoming. Role: Semantic Auditor & Scribe.
