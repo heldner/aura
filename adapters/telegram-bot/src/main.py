@@ -4,20 +4,21 @@ import os
 import nats
 import structlog
 from aiogram import Bot, Dispatcher
+from aura_core import MetabolicLoop, SkillRegistry
+from bot import router
+from hive.aggregator import TelegramAggregator
+from hive.connector import TelegramConnector
+from hive.connector.proteins.aura_client import GRPCNegotiationClient
+from hive.connector.proteins.telegram_api import TelegramProtein
+from hive.generator import TelegramGenerator
+from hive.transformer import TelegramTransformer
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from src.bot import router
-from src.client import GRPCNegotiationClient
-from src.config import settings
-from src.hive.aggregator import TelegramAggregator
-from src.hive.connector import TelegramConnector
-from src.hive.generator import TelegramGenerator
-from src.hive.metabolism import TelegramMetabolism
-from src.hive.transformer import TelegramTransformer
+from config import settings
 
 # Setup logging
 structlog.configure(
@@ -63,20 +64,26 @@ async def main() -> None:
     except Exception as e:
         logger.error("Unexpected error connecting to NATS", error=str(e))
 
-    # Initialize gRPC client
-    client = GRPCNegotiationClient(
+    # Initialize Bot
+    bot = Bot(token=settings.token.get_secret_value())
+
+    # Initialize Proteins
+    telegram_protein = TelegramProtein(bot)
+    aura_protein = GRPCNegotiationClient(
         settings.core_url, timeout=settings.negotiation_timeout
     )
 
-    # Initialize Bot
-    bot = Bot(token=settings.token.get_secret_value())
+    # Initialize Skill Registry
+    registry = SkillRegistry()
+    registry.register("messenger", telegram_protein)
+    registry.register("core_link", aura_protein)
 
     # Initialize Hive components
     aggregator = TelegramAggregator()
     transformer = TelegramTransformer()
-    connector = TelegramConnector(bot, client)
+    connector = TelegramConnector(registry)
     generator = TelegramGenerator(nats_client=nc)
-    metabolism = TelegramMetabolism(aggregator, transformer, connector, generator)
+    metabolism = MetabolicLoop(aggregator, transformer, connector, generator)
 
     # Initialize Dispatcher
     dp = Dispatcher()
@@ -97,7 +104,7 @@ async def main() -> None:
     except Exception as e:
         logger.error("Bot crashed unexpectedly", error=str(e), exc_info=True)
     finally:
-        await client.close()
+        await aura_protein.close()
         await bot.session.close()
         if nc:
             await nc.close()

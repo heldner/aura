@@ -1,65 +1,77 @@
 from .dna import (
-    # Constants
+    Aggregator,
+    Connector,
+    Generator,
+    Membrane,
+    Skill,
+    Transformer,
+)
+from .manifest import (
     ALLOWED_CHAMBERS,
     ALLOWED_ROOT_FILES,
     MACRO_ATCG_FOLDERS,
-    # ATCG Protocols
-    Aggregator,
-    # bee.Keeper Types
+    find_hive_root,
+    get_allowed_chambers,
+    get_allowed_root_files,
+    get_macro_atcg_folders,
+)
+from .metabolism import (
+    BaseConnector,
+    MetabolicLoop,
+    SkillRegistry,
+)
+from .types import (
     AuditObservation,
-    BeeAggregator,
-    BeeConnector,
     BeeContext,
-    BeeDNA,
-    BeeGenerator,
     BeeObservation,
-    BeeTransformer,
-    Connector,
-    # Core Data Types
     Event,
-    Generator,
+    FailureIntent,
     HiveContext,
     IntentAction,
     NegotiationOffer,
     NegotiationResult,
     Observation,
     SearchResult,
-    # Skill Protocol (Level 3: Proteins)
-    SkillProtocol,
-    Transformer,
-    # Utilities
-    find_hive_root,
+    Signal,
+    SystemVitals,
+    TelegramContext,
+    UIAction,
 )
 
 __all__ = [
-    # Constants
-    "ALLOWED_CHAMBERS",
-    "ALLOWED_ROOT_FILES",
-    "MACRO_ATCG_FOLDERS",
-    # Utilities
+    # Manifest (Geography)
     "find_hive_root",
-    # Core Data Types
-    "NegotiationOffer",
-    "HiveContext",
-    "IntentAction",
-    "Observation",
-    "Event",
-    "SearchResult",
-    "NegotiationResult",
-    # ATCG Protocols
-    "BeeDNA",
+    "MACRO_ATCG_FOLDERS",
+    "ALLOWED_ROOT_FILES",
+    "ALLOWED_CHAMBERS",
+    "get_macro_atcg_folders",
+    "get_allowed_root_files",
+    "get_allowed_chambers",
+    # Protocols (The Law)
     "Aggregator",
     "Transformer",
     "Connector",
     "Generator",
-    # Skill Protocol (Level 3: Proteins)
-    "SkillProtocol",
-    # bee.Keeper Types
+    "Membrane",
+    "Skill",
+    # Engine (The Machinery)
+    "BaseConnector",
+    "SkillRegistry",
+    "MetabolicLoop",
+    # Types
+    "Signal",
+    "NegotiationOffer",
+    "HiveContext",
+    "IntentAction",
+    "FailureIntent",
+    "Observation",
+    "Event",
+    "SearchResult",
+    "SystemVitals",
+    "NegotiationResult",
     "BeeContext",
     "AuditObservation",
     "BeeObservation",
-    "BeeAggregator",
-    "BeeTransformer",
-    "BeeConnector",
-    "BeeGenerator",
+    "TelegramContext",
+    "UIAction",
 ]

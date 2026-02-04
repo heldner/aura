@@ -33,8 +33,7 @@ jobs:
               with:
                   filters: |
                       code:
-                      - 'core-service/**'
-                      - 'core-service/scripts/**'
+                      - 'core/**'
                       - 'api-gateway/**'
                       - 'frontend/**'
                       - 'proto/**'
@@ -60,7 +59,7 @@ jobs:
               with:
                   name: proto-stubs
                   path: |
-                      core-service/src/proto
+                      core/src/hive/proto
                       api-gateway/src/proto
                       frontend/src/lib/aura
 
@@ -100,7 +99,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                service: [core-service, api-gateway, frontend, telegram-bot]
+                service: [core, api-gateway, frontend, telegram-bot]
         permissions:
             contents: read
             packages: write
@@ -130,8 +129,8 @@ jobs:
                   if [ "$SERVICE" = "telegram-bot" ]; then
                     echo "dir=adapters/telegram-bot" >> $GITHUB_OUTPUT
                     echo "name=telegram-bot" >> $GITHUB_OUTPUT
-                  elif [ "$SERVICE" = "core-service" ]; then
-                    echo "dir=core-service" >> $GITHUB_OUTPUT
+                  elif [ "$SERVICE" = "core" ]; then
+                    echo "dir=core" >> $GITHUB_OUTPUT
                     echo "name=core" >> $GITHUB_OUTPUT
                   elif [ "$SERVICE" = "api-gateway" ]; then
                     echo "dir=api-gateway" >> $GITHUB_OUTPUT
@@ -169,7 +168,7 @@ jobs:
             - name: Deploy to Cluster
               env:
                   TG_TOKEN: ${{ secrets.AURA_TELEGRAM_TOKEN }}
-                  MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  API_KEY: ${{ secrets.MISTRAL_API_KEY }}
                   OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
                   SOL_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}
                   FRP_TOKEN: ${{ secrets.FRP_CLIENT_TOKEN }}
@@ -189,8 +188,8 @@ jobs:
                     --set gateway.image.tag=sha-$SHORT_SHA \
                     --set frontend.image.tag=sha-$SHORT_SHA \
                     --set telegram.image.tag=sha-$SHORT_SHA \
-                    --set secrets.mistralKey="$MISTRAL_KEY" \
-                    --set secrets.openaiKey="$OPENAI_KEY" \
+                    --set secrets.llmApiKey="$API_KEY" \
+                    --set secrets.openaiApiKey="$OPENAI_KEY" \
                     --set secrets.telegramToken="$TG_TOKEN" \
                     --set secrets.secretEncryptionKey="$ENC_KEY" \
                     --set secrets.solanaPrivateKey="$SOL_KEY" \

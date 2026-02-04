@@ -64,6 +64,18 @@ flowchart TB
 
 These diagrams answer the question:
 
+> *“How does the hive understand itself?”*
+
+---
+
+## Relation to Advisory Model
+
+Visual diagrams are aligned with the declarative advisory model
+defined in:
+
+* `imp/imp-001/hive.yaml`
+* `docs/standards/STD-001.md`
+* `docs/standards/IMP-001.md`
 > *"How does the hive understand itself through its fractal ATCG-M metabolism?"*
 
 ---
