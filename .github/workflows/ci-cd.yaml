@@ -116,6 +116,15 @@ jobs:
               with:
                   name: proto-stubs
 
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+              with:
+                  version: "0.9.26"
+                  enable-cache: true
             - name: Train the Brain
               env:
                 AURA_LLM__MODEL: "mistral/mistral-large-latest"
