@@ -1,22 +1,39 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aura_core import HiveContext, IntentAction, NegotiationOffer, SystemVitals
+from aura_core import (
+    HiveContext,
+    IntentAction,
+    NegotiationOffer,
+    Observation,
+    SkillRegistry,
+    SystemVitals,
+)
 from hive.aggregator import HiveAggregator
 from hive.membrane import HiveMembrane
+from hive.proteins.guard import GuardSkill
 
 
 @pytest.mark.asyncio
 async def test_aggregator_perceive(mocker):
-    # Mock DB and monitor
-    mock_session_factory = mocker.patch("hive.aggregator.main.SessionLocal")
-    mock_session = mock_session_factory.return_value.__enter__.return_value
-    mock_query = mock_session.query.return_value.filter_by.return_value.first
-    mock_query.return_value = MagicMock(
-        name="Item", id="item1", base_price=150.0, floor_price=100.0, meta={}
+    # Mock Storage Protein
+    registry = SkillRegistry()
+    mock_storage = MagicMock()
+    mock_storage.execute = AsyncMock(
+        return_value=Observation(
+            success=True,
+            data={
+                "id": "item1",
+                "name": "Test Item",
+                "base_price": 150.0,
+                "floor_price": 100.0,
+                "meta": {},
+            },
+        )
     )
+    registry.register("storage", mock_storage)
 
-    aggregator = HiveAggregator()
+    aggregator = HiveAggregator(registry=registry)
     mocker.patch.object(
         aggregator,
         "get_vitals",
@@ -43,9 +60,17 @@ async def test_aggregator_perceive(mocker):
 
 @pytest.mark.asyncio
 async def test_membrane_outbound_override(mocker):
-    membrane = HiveMembrane()
-    # Mock settings via mocker
-    mocker.patch.object(membrane.settings.logic, "min_margin", 0.1)
+    from hive.proteins.guard._internal import OutputGuard
+
+    from config.policy import SafetySettings
+
+    registry = SkillRegistry()
+    guard = GuardSkill()
+    settings = SafetySettings(min_profit_margin=0.1)
+    guard.bind(settings, OutputGuard(safety_settings=settings))
+    await guard.initialize()
+    registry.register("guard", guard)
+    membrane = HiveMembrane(registry=registry)
 
     context = HiveContext(
         item_id="item1",
@@ -98,9 +123,17 @@ async def test_membrane_inbound_invalid_bid():
 
 @pytest.mark.asyncio
 async def test_membrane_invalid_min_margin(mocker):
-    membrane = HiveMembrane()
-    # Mock settings with invalid margin
-    mocker.patch.object(membrane.settings.logic, "min_margin", 1.5)
+    from hive.proteins.guard._internal import OutputGuard
+
+    from config.policy import SafetySettings
+
+    registry = SkillRegistry()
+    guard = GuardSkill()
+    settings = SafetySettings(min_profit_margin=1.5)
+    guard.bind(settings, OutputGuard(safety_settings=settings))
+    await guard.initialize()
+    registry.register("guard", guard)
+    membrane = HiveMembrane(registry=registry)
 
     context = HiveContext(
         item_id="item1",
@@ -109,7 +142,8 @@ async def test_membrane_invalid_min_margin(mocker):
     )
 
     decision = IntentAction(action="accept", price=200.0, message="OK")
-    # Should fallback to DEFAULT_MIN_MARGIN (0.1) and log a warning
+    # Strict behavior: 1.5 margin is impossible to meet, so it should trigger a violation
+    # even if the price is otherwise high.
     safe_decision = await membrane.inspect_outbound(decision, context)
-    # required = 100 / (1 - 0.1) = 111.11. 200 > 111.11 so it's fine.
-    assert safe_decision.price == 200.0
+    assert safe_decision.action == "counter"
+    assert safe_decision.metadata["override_reason"] == "MIN_MARGIN_VIOLATION"

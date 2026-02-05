@@ -3,7 +3,7 @@ from .dna import (
     Connector,
     Generator,
     Membrane,
-    Skill,
+    SkillProtocol,
     Transformer,
 )
 from .manifest import (
@@ -36,6 +36,7 @@ from .types import (
     SystemVitals,
     TelegramContext,
     UIAction,
+    get_raw_key,
 )
 
 __all__ = [
@@ -53,7 +54,7 @@ __all__ = [
     "Connector",
     "Generator",
     "Membrane",
-    "Skill",
+    "SkillProtocol",
     # Engine (The Machinery)
     "BaseConnector",
     "SkillRegistry",
@@ -63,6 +64,7 @@ __all__ = [
     "NegotiationOffer",
     "HiveContext",
     "IntentAction",
+    "get_raw_key",
     "FailureIntent",
     "Observation",
     "Event",

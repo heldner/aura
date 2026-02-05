@@ -4,20 +4,31 @@ from typing import Any
 import grpc
 import structlog
 from aura.negotiation.v1 import negotiation_pb2, negotiation_pb2_grpc
-from aura_core import Observation, Skill
+from aura_core import Observation, SkillProtocol
 from google.protobuf.json_format import MessageToDict
 from interfaces import NegotiationProvider, NegotiationResult, SearchResult
 
 logger = structlog.get_logger()
 
 
-class GRPCNegotiationClient(NegotiationProvider, Skill):
-    def __init__(self, grpc_url: str, timeout: float = 30.0) -> None:
-        self.channel = grpc.aio.insecure_channel(grpc_url)
+class GRPCNegotiationClient(
+    NegotiationProvider, SkillProtocol[dict[str, Any], grpc.aio.Channel, dict[str, Any], Observation]
+):
+    def __init__(self) -> None:
+        self.channel: grpc.aio.Channel | None = None
+        self.stub: negotiation_pb2_grpc.NegotiationServiceStub | None = None
+        self.settings: dict[str, Any] | None = None
+        self.timeout: float = 30.0
+
+    def bind(self, settings: dict[str, Any], provider: grpc.aio.Channel) -> None:
+        self.settings = settings
+        self.channel = provider
         self.stub = negotiation_pb2_grpc.NegotiationServiceStub(self.channel)
-        self.timeout = timeout
+        self.timeout = settings.get("timeout", 30.0)
 
     async def search(self, query: str, limit: int = 5) -> list[SearchResult]:
+        if not self.stub:
+            return []
         try:
             request = negotiation_pb2.SearchRequest(query=query, limit=limit)
             response = await self.stub.Search(request, timeout=self.timeout)
@@ -31,6 +42,8 @@ class GRPCNegotiationClient(NegotiationProvider, Skill):
             return []
 
     async def negotiate(self, item_id: str, bid: float) -> NegotiationResult:
+        if not self.stub:
+            return {"error": "Client not initialized"}
         try:
             request = negotiation_pb2.NegotiateRequest(
                 request_id=str(uuid.uuid4()),
@@ -76,4 +89,5 @@ class GRPCNegotiationClient(NegotiationProvider, Skill):
         return Observation(success=False, error=f"Unknown intent: {intent}")
 
     async def close(self) -> None:
-        await self.channel.close()
+        if self.channel:
+            await self.channel.close()
