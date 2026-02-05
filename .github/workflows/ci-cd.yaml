@@ -127,9 +127,11 @@ jobs:
                   enable-cache: true
             - name: Train the Brain
               env:
-                AURA_LLM__MODEL: "mistral/mistral-large-latest"
-                AURA_LLM__API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-                MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  AURA_LLM__MODEL: "mistral/mistral-large-latest"
+                  AURA_LLM__API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  AURA_DATABASE__URL: postgresql://test:test@localhost:5432/test_db
+                  AURA_DATABASE__REDIS_URL: redis://localhost:6379/0
               run: |
                 make train
 
