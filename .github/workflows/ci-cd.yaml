@@ -116,6 +116,14 @@ jobs:
               with:
                   name: proto-stubs
 
+            - name: Train the Brain
+              env:
+                AURA_LLM__MODEL: "mistral/mistral-large-latest"
+                AURA_LLM__API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+              run: |
+                make train
+
             - name: Log in to the Container registry
               uses: docker/login-action@v3
               with:
