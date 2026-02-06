@@ -24,6 +24,7 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
+        # args: ["--exclude", ".*/proto/.*"]
         additional_dependencies: [pydantic, types-requests, types-setuptools]
 
   - repo: https://github.com/PyCQA/bandit

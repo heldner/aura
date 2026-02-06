@@ -11,6 +11,11 @@ dist/
 wheels/
 *.egg-info
 
+# Generated Protobuf files
+**/gen/
+**/proto/
+!/proto/
+
 # Virtual environments
 .venv
 

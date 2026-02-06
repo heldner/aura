@@ -8,16 +8,16 @@
         "input_bid": "600",
         "context": "{\"base_price\": 1000, \"floor_price\": 800, \"occupancy\": \"high\", \"value_add_inventory\": [{\"item\": \"Breakfast for two\", \"internal_cost\": 20, \"perceived_value\": 60}, {\"item\": \"Late checkout\", \"internal_cost\": 0, \"perceived_value\": 40}, {\"item\": \"Room upgrade\", \"internal_cost\": 30, \"perceived_value\": 120}]}",
         "history": "[]",
-        "thought": "Bid is significantly below floor price during high occupancy. Need to firmly reject while leaving door open for future negotiation. Offer a counter that maintains price integrity but adds perceived value through low-cost perks.",
-        "action": "{\n  \"action\": \"counter\",\n  \"price\": 950,\n  \"message\": \"I appreciate your offer, but $600 is below our minimum acceptable rate during this busy period. I can offer $950 with complimentary breakfast for two and late checkout to make your stay more enjoyable.\"\n}"
+        "thought": "Bid is significantly below floor price in a high-occupancy period. Reject firmly but leave room for a counter to maintain engagement. Use perceived value from inventory to justify a higher price without eroding margin.",
+        "action": "{\n  \"action\": \"counter\",\n  \"price\": 920,\n  \"message\": \"I appreciate your offer, but $600 is below our minimum for this period. I can offer $920 with breakfast for two and late checkout included—this reflects great value for your stay.\"\n}"
       },
       {
         "augmented": true,
         "input_bid": "700",
         "context": "{\"base_price\": 1000, \"floor_price\": 800, \"occupancy\": \"high\", \"value_add_inventory\": [{\"item\": \"Breakfast for two\", \"internal_cost\": 20, \"perceived_value\": 60}, {\"item\": \"Late checkout\", \"internal_cost\": 0, \"perceived_value\": 40}, {\"item\": \"Room upgrade\", \"internal_cost\": 30, \"perceived_value\": 120}]}",
         "history": "[]",
-        "thought": "Bid is at floor price, but high occupancy allows us to push slightly higher while still offering value. We'll counter just above floor to maintain margin while sweetening the deal with a low-cost perk to encourage acceptance.",
-        "action": "{\n  \"action\": \"counter\",\n  \"price\": 830,\n  \"message\": \"Given the high demand, I can offer $830 and include complimentary breakfast for two and late checkout.\"\n}"
+        "thought": "Bid is at floor price, but high occupancy allows us to hold firm. Offer a small concession with high-perceived-value add-ons to justify the price and encourage acceptance.",
+        "action": "{\n  \"action\": \"counter\",\n  \"price\": 800,\n  \"message\": \"Given strong demand, I can’t go below $800, but I’ll include breakfast for two and late checkout at that rate.\"\n}"
       },
       {
         "augmented": true,

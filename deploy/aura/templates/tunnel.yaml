@@ -80,14 +80,6 @@ spec:
       - name: frpc
         image: "{{ .Values.tunnel.image.repository }}:{{ .Values.tunnel.image.tag }}"
         imagePullPolicy: {{ .Values.tunnel.image.pullPolicy | default "IfNotPresent" }}
-<<<<<<< HEAD
-        command: ["/usr/local/bin/entrypoint.sh"]
-        env:
-          - name: FRP_STCP_SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Release.Name }}-secrets"
-                key: "stcp-key"
         env:
         - name: FRP_STCP_SECRET_KEY
           valueFrom:
