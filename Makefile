@@ -4,6 +4,7 @@
 TAG ?= latest
 REGISTRY ?= ghcr.io/zaebee
 PLATFORM ?= linux/amd64
+DNA_PATH ?= packages/aura-core/src
 CORE_PATH ?= core:core/src
 GATEWAY_PATH ?= api-gateway/src
 TG_PATH ?= synapses/telegram-bot/src:synapses/telegram-bot/src/proto
@@ -14,13 +15,13 @@ lint:
 	# Protobuf Lint
 	cd proto && buf lint
 	# Python Lint (Ruff)
-	uv run ruff check .
+	PYTHONPYPATH=$(CORE_PATH) uv run ruff check .
 	# Python Type Check (Mypy)
 	MYPYPATH=$(CORE_PATH) uv run mypy core/src
 	MYPYPATH=$(GATEWAY_PATH):packages/aura-core/src uv run mypy api-gateway/src
 	MYPYPATH=$(TG_PATH):packages/aura-core/src uv run mypy synapses/telegram-bot/src
 	MYPYPATH=$(KEEPER_PATH):packages/aura-core/src uv run mypy agents/bee-keeper/main.py agents/bee-keeper/src
-	MYPYPATH=packages/aura-core/src uv run mypy packages/aura-core/src
+	MYPYPATH=$(DNA_PATH) uv run mypy packages/aura-core/src
 	# Security Audit (Bandit)
 	uv run bandit -r . -c pyproject.toml
 	# Frontend Lint
@@ -102,12 +103,20 @@ core-train:
 # Test health endpoints
 tools-health:
 	# Test health check endpoints (requires running services)
-	PYTHONPATH=.:$(CORE_PATH) uv run python tools/test_health_endpoints.py
+	PYTHONPATH=$(CORE_PATH) uv run python tools/test_health_endpoints.py
+
+tools-distill:
+	# Distill architectural knowledge from the codebase into binary/JSON artifacts
+	PYTHONPATH=$(CORE_PATH) uv run python tools/distill_knowledge.py
+
+tools-validate:
+	# Validate knowledge artifacts against the markdown architectural anchor
+	PYTHONPATH=$(CORE_PATH) uv run python tools/validate_knowledge.py
 
 tools-simulate:
 	# Run agent negotiation simulation
-	PYTHONPATH=:.$(CORE_PATH) uv run python tools/simulators/agent_sim.py
+	PYTHONPATH=$(CORE_PATH) uv run python tools/simulators/agent_sim.py
 
 tools-buyer:
 	# Run agent negotiation simulation
-	PYTHONPATH=:.$(CORE_PATH) uv run python tools/simulators/autonomous_buyer.py
+	PYTHONPATH=$(CORE_PATH) uv run python tools/simulators/autonomous_buyer.py
