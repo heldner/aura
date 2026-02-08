@@ -34,5 +34,22 @@ spec:
               value: "{{ .Values.telegram.env.LOG_LEVEL }}"
             - name: AURA_TG__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
+            {{- if .Values.telegram.env.DEBUG }}
+            - name: DEBUG
+              value: {{ .Values.telegram.env.DEBUG | quote }}
+            {{- end }}
+          {{- if .Values.hiveManifest.enabled }}
+          volumeMounts:
+            - name: hive-manifest
+              mountPath: {{ .Values.hiveManifest.mountPath }}
+              subPath: hive-manifest.yaml
+              readOnly: true
+          {{- end }}
           resources:
             {{- toYaml .Values.telegram.resources | nindent 12 }}
+      {{- if .Values.hiveManifest.enabled }}
+      volumes:
+        - name: hive-manifest
+          configMap:
+            name: "{{ .Release.Name }}-hive-manifest"
+      {{- end }}

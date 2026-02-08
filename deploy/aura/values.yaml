@@ -171,3 +171,9 @@ nats:
   jetstream:
     enabled: true
     storageSize: 1Gi
+
+# Hive Manifest ConfigMap (disabled by default, enable via values override)
+hiveManifest:
+  enabled: false
+  mountPath: /app/hive-manifest.yaml
+  data: {}

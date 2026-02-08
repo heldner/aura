@@ -1,0 +1,12 @@
+{{- if .Values.hiveManifest.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-hive-manifest"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  hive-manifest.yaml: |
+    {{- .Values.hiveManifest.data | toYaml | nindent 4 }}
+{{- end }}
