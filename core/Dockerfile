@@ -31,8 +31,9 @@ COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
 # Copy virtual environment from builder (workspace root .venv)
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy source code and other artifacts to the same relative path as builder
+# Copy source code, generated proto stubs and other artifacts
 COPY core/src /app/core/src
+COPY core/gen-proto /app/core/gen-proto
 COPY core/alembic.ini /app/core/alembic.ini
 COPY core/migrations /app/core/migrations
 COPY core/data /app/core/data
@@ -42,7 +43,7 @@ WORKDIR /app/core
 
 # Set PATH to use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH=/app/core:/app/core/src:/app/core/src/hive/proto
+ENV PYTHONPATH=/app/core:/app/core/src:/app/core/gen-proto
 
 # Verify critical packages installed
 RUN python -c "import grpc_health.v1.health_pb2"

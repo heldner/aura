@@ -25,14 +25,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 # Copy virtual environment from builder (workspace root .venv)
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy source code to the same relative path as builder
+# Copy source code and generated proto stubs
 COPY api-gateway/src /app/api-gateway/src
+COPY api-gateway/gen-proto /app/api-gateway/gen-proto
 
 WORKDIR /app/api-gateway
 
 # Set PATH to use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH=/app/api-gateway/src:/app/api-gateway/src/proto
+ENV PYTHONPATH=/app/api-gateway/src:/app/api-gateway/gen-proto
 
 EXPOSE 8000
 
