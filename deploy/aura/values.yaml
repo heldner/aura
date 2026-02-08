@@ -128,6 +128,17 @@ frontend:
 
 # Telegram Bot Service Configuration
 telegram:
+  healthPort: 8080
+  livenessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
   image:
     repository: ghcr.io/zaebee/aura-telegram-bot
     tag: latest
@@ -142,6 +153,7 @@ telegram:
       memory: 64Mi
   env:
     LOG_LEVEL: info
+    AURA_LLM__MODEL: "rule"  # Use rule-based reasoning by default (no API key needed)
 
 # Secrets for the application.
 # For production, it is strongly recommended to use a secret management solution
