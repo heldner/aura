@@ -37,6 +37,10 @@ spec:
               value: "{{ .Values.telegram.healthPort }}"
             - name: AURA_TELEGRAM__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
+            {{- if .Values.telegram.env.DEBUG }}
+            - name: AURA_TELEGRAM__DEBUG
+              value: {{ .Values.telegram.env.DEBUG | quote }}
+            {{- end }}
             # --- Core metabolism settings (in-process HiveCell) ---
             - name: AURA_DATABASE__URL
               value: "postgresql://{{ .Values.postgres.auth.username }}:{{ .Values.postgres.auth.password }}@{{ .Release.Name }}-postgres.{{ .Release.Namespace }}.svc.cluster.local:5432/{{ .Values.postgres.auth.database }}"
@@ -58,6 +62,13 @@ spec:
                   optional: true
             - name: AURA_CRYPTO__ENABLED
               value: "false"
+          {{- if .Values.hiveManifest.enabled }}
+          volumeMounts:
+            - name: hive-manifest
+              mountPath: {{ .Values.hiveManifest.mountPath }}
+              subPath: hive-manifest.yaml
+              readOnly: true
+          {{- end }}
           ports:
             - containerPort: {{ .Values.telegram.healthPort }}
               name: health
@@ -79,3 +90,9 @@ spec:
             failureThreshold: {{ .Values.telegram.readinessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.telegram.resources | nindent 12 }}
+      {{- if .Values.hiveManifest.enabled }}
+      volumes:
+        - name: hive-manifest
+          configMap:
+            name: "{{ .Release.Name }}-hive-manifest"
+      {{- end }}
