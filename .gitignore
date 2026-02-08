@@ -14,6 +14,7 @@ wheels/
 # Generated Protobuf files
 **/gen/
 **/proto/
+**/gen-proto/
 !/proto/
 *_pb.ts
 *_pb.js

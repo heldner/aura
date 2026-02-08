@@ -5,9 +5,10 @@ TAG ?= latest
 REGISTRY ?= ghcr.io/zaebee
 PLATFORM ?= linux/amd64
 DNA_PATH ?= packages/aura-core/src
-CORE_PATH ?= core:core/src
-GATEWAY_PATH ?= api-gateway/src
-TG_PATH ?= synapses/telegram-bot/src:synapses/telegram-bot/src/proto
+CORE_PATH ?= core:core/src:core/gen-proto
+GATEWAY_PATH ?= api-gateway/src:api-gateway/gen-proto
+TG_PATH ?= synapses/telegram-bot/src:synapses/telegram-bot/gen-proto
+MCP_PATH ?= synapses/mcp-server/src:synapses/mcp-server/gen-proto
 KEEPER_PATH ?= agents/bee-keeper/src
 
 # --- 1. CODE QUALITY ---
@@ -15,11 +16,13 @@ lint:
 	# Protobuf Lint
 	cd proto && buf lint
 	# Python Lint (Ruff)
-	PYTHONPYPATH=$(CORE_PATH) uv run ruff check .
+	PYTHONPATH=$(CORE_PATH):$(GATEWAY_PATH):$(TG_PATH):$(MCP_PATH):$(KEEPER_PATH):$(DNA_PATH) uv run ruff check .
 	# Python Type Check (Mypy)
-	MYPYPATH=$(CORE_PATH) uv run mypy core/src
-	MYPYPATH=$(GATEWAY_PATH):packages/aura-core/src uv run mypy api-gateway/src
-	MYPYPATH=$(TG_PATH):packages/aura-core/src uv run mypy synapses/telegram-bot/src
+	# We use --explicit-package-bases to avoid double discovery when multiple paths overlap
+	MYPYPATH=$(CORE_PATH):$(DNA_PATH) uv run mypy --explicit-package-bases core/src
+	MYPYPATH=$(GATEWAY_PATH):packages/aura-core/src uv run mypy --explicit-package-bases api-gateway/src
+	MYPYPATH=$(TG_PATH):core/src:core/gen-proto:packages/aura-core/src uv run mypy --explicit-package-bases synapses/telegram-bot/src
+	MYPYPATH=$(MCP_PATH):core/src:core/gen-proto:packages/aura-core/src uv run mypy --explicit-package-bases synapses/mcp-server/src
 	MYPYPATH=$(KEEPER_PATH):packages/aura-core/src uv run mypy agents/bee-keeper/main.py agents/bee-keeper/src
 	MYPYPATH=$(DNA_PATH) uv run mypy packages/aura-core/src
 	# Security Audit (Bandit)
@@ -37,6 +40,8 @@ test:
 	PYTHONPATH=$(CORE_PATH) uv run pytest core/tests/ -v
 	# Run telegram-bot tests with isolated path to avoid 'src' collision
 	PYTHONPATH=$(TG_PATH) uv run pytest synapses/telegram-bot/tests/ -v
+	# Run mcp-server tests if they exist
+	if [ -d "synapses/mcp-server/tests" ]; then PYTHONPATH=$(MCP_PATH):$(CORE_PATH) uv run pytest synapses/mcp-server/tests/ -v; fi
 
 # Run tests with coverage report
 test-cov:
