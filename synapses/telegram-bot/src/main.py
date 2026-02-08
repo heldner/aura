@@ -5,14 +5,13 @@ import os
 import nats
 import structlog
 from aiogram import Bot, Dispatcher
+from config import Settings as CoreSettings
 from effector import TelegramEffector
 from health import start_health_server, state as health_state
 from hive.cortex import HiveCell
 from receptor import TelegramReceptor
 from synapse_settings import settings as tg_settings
 from translator import TelegramTranslator
-
-from config import Settings as CoreSettings
 
 # Setup logging
 level = getattr(logging, tg_settings.log_level.upper(), logging.INFO)

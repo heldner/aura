@@ -9,7 +9,6 @@ Kubernetes-compatible probe endpoints:
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 
 from aiohttp import web
@@ -60,6 +59,6 @@ async def start_health_server(port: int) -> web.AppRunner:
 
     runner = web.AppRunner(app, access_log=None)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, "0.0.0.0", port)  # nosec B104 - container needs all interfaces
     await site.start()
     return runner
