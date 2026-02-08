@@ -184,7 +184,8 @@ nats:
     enabled: true
     storageSize: 1Gi
 
-# Hive Manifest ConfigMap (disabled by default, enable via values override)
+# Hive Manifest ConfigMap — provides hive-manifest.yaml inside pods
+# for aura-core's find_hive_root() discovery.
 hiveManifest:
-  enabled: false
+  enabled: true
   mountPath: /app/hive-manifest.yaml
