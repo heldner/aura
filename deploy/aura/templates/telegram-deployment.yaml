@@ -38,9 +38,9 @@ spec:
             - name: AURA_TELEGRAM__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
             {{- if .Values.telegram.env.DEBUG }}
-            - name: DEBUG
+            - name: AURA_TELEGRAM__DEBUG
               value: {{ .Values.telegram.env.DEBUG | quote }}
-            {{- end }
+            {{- end }}
             # --- Core metabolism settings (in-process HiveCell) ---
             - name: AURA_DATABASE__URL
               value: "postgresql://{{ .Values.postgres.auth.username }}:{{ .Values.postgres.auth.password }}@{{ .Release.Name }}-postgres.{{ .Release.Namespace }}.svc.cluster.local:5432/{{ .Values.postgres.auth.database }}"

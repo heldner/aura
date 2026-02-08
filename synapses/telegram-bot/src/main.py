@@ -16,8 +16,7 @@ from translator import TelegramTranslator
 from config import Settings as CoreSettings
 
 # Setup logging
-DEBUG = os.getenv("DEBUG")
-level = logging.DEBUG if DEBUG else getattr(logging, tg_settings.log_level.upper(), logging.INFO)
+level = logging.DEBUG if tg_settings.debug else getattr(logging, tg_settings.log_level.upper(), logging.INFO)
 log_format = os.getenv("AURA_LOG_FORMAT", "json").lower()
 renderer = (
     structlog.dev.ConsoleRenderer()
@@ -49,7 +48,7 @@ async def main() -> None:
         webhook_domain=tg_settings.webhook_domain,
         otel_endpoint=tg_settings.otel_exporter_otlp_endpoint,
         log_format=log_format,
-        debug=bool(DEBUG),
+        debug=tg_settings.debug,
     )
 
     # 1. Initialize NATS Bloodstream

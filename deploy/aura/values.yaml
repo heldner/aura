@@ -188,4 +188,3 @@ nats:
 hiveManifest:
   enabled: false
   mountPath: /app/hive-manifest.yaml
-  data: {}
