@@ -21,7 +21,9 @@ class TelegramSettings(BaseSettings):
     )
     negotiation_timeout: float = 60.0
     webhook_domain: str | None = None
+    health_port: int = 8080
     log_level: str = "info"
+    debug: bool = False
 
 
 @lru_cache
