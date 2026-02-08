@@ -21,6 +21,7 @@ spec:
           image: "{{ .Values.telegram.image.repository }}:{{ .Values.telegram.image.tag }}"
           imagePullPolicy: {{ .Values.telegram.image.pullPolicy }}
           env:
+            # --- Synapse-specific settings (AURA_TG__) ---
             - name: AURA_TG__TOKEN
               valueFrom:
                 secretKeyRef:
@@ -32,7 +33,49 @@ spec:
               value: "nats://{{ .Release.Name }}-nats.{{ .Release.Namespace }}.svc.cluster.local:4222"
             - name: AURA_TG__LOG_LEVEL
               value: "{{ .Values.telegram.env.LOG_LEVEL }}"
+            - name: AURA_TG__HEALTH_PORT
+              value: "{{ .Values.telegram.healthPort }}"
             - name: AURA_TG__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
+            # --- Core metabolism settings (in-process HiveCell) ---
+            - name: AURA_DATABASE__URL
+              value: "postgresql://{{ .Values.postgres.auth.username }}:{{ .Values.postgres.auth.password }}@{{ .Release.Name }}-postgres.{{ .Release.Namespace }}.svc.cluster.local:5432/{{ .Values.postgres.auth.database }}"
+            - name: AURA_DATABASE__REDIS_URL
+              value: "redis://{{ .Release.Name }}-redis.{{ .Release.Namespace }}.svc.cluster.local:6379/0"
+            - name: AURA_SERVER__NATS_URL
+              value: "nats://{{ .Release.Name }}-nats.{{ .Release.Namespace }}.svc.cluster.local:4222"
+            - name: AURA_SERVER__OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
+            - name: AURA_SERVER__METRICS_PORT
+              value: "9092"
+            - name: AURA_LLM__MODEL
+              value: "{{ .Values.telegram.env.AURA_LLM__MODEL | default "rule" }}"
+            - name: AURA_LLM__API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secrets"
+                  key: "api-key"
+                  optional: true
+            - name: AURA_CRYPTO__ENABLED
+              value: "false"
+          ports:
+            - containerPort: {{ .Values.telegram.healthPort }}
+              name: health
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: {{ .Values.telegram.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.telegram.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.telegram.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.telegram.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: {{ .Values.telegram.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.telegram.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.telegram.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.telegram.readinessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.telegram.resources | nindent 12 }}
