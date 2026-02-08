@@ -6,6 +6,7 @@ import nats
 import structlog
 from aiogram import Bot, Dispatcher
 from effector import TelegramEffector
+from health import start_health_server, state as health_state
 from hive.cortex import HiveCell
 from receptor import TelegramReceptor
 from synapse_settings import settings as tg_settings
@@ -78,6 +79,14 @@ async def main() -> None:
 
     logger.info("synapse_ready", core_url=tg_settings.core_url)
 
+    # 7. Start Health probe server
+    health_runner = await start_health_server(tg_settings.health_port)
+    logger.info("health_server_started", port=tg_settings.health_port)
+
+    # Mark probe state
+    health_state.nats_connected = nc is not None
+    health_state.bot_polling = True
+
     tasks = []
 
     # Start Effector background task
@@ -91,11 +100,13 @@ async def main() -> None:
     except Exception as e:
         logger.error("bot_polling_failed", error=str(e))
     finally:
+        health_state.bot_polling = False
         for task in tasks:
             task.cancel()
         if nc:
             await nc.close()
         await bot.session.close()
+        await health_runner.cleanup()
 
 
 if __name__ == "__main__":

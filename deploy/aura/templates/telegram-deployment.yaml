@@ -32,7 +32,28 @@ spec:
               value: "nats://{{ .Release.Name }}-nats.{{ .Release.Namespace }}.svc.cluster.local:4222"
             - name: AURA_TG__LOG_LEVEL
               value: "{{ .Values.telegram.env.LOG_LEVEL }}"
+            - name: AURA_TG__HEALTH_PORT
+              value: "{{ .Values.telegram.healthPort }}"
             - name: AURA_TG__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
+          ports:
+            - containerPort: {{ .Values.telegram.healthPort }}
+              name: health
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: {{ .Values.telegram.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.telegram.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.telegram.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.telegram.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: {{ .Values.telegram.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.telegram.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.telegram.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.telegram.readinessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.telegram.resources | nindent 12 }}
