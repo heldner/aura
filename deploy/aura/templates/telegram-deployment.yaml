@@ -21,21 +21,21 @@ spec:
           image: "{{ .Values.telegram.image.repository }}:{{ .Values.telegram.image.tag }}"
           imagePullPolicy: {{ .Values.telegram.image.pullPolicy }}
           env:
-            # --- Synapse-specific settings (AURA_TG__) ---
-            - name: AURA_TG__TOKEN
+            # --- Synapse-specific settings (AURA_TELEGRAM__) ---
+            - name: AURA_TELEGRAM__TOKEN
               valueFrom:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-secrets"
                   key: "telegram-token"
-            - name: AURA_TG__CORE_URL
+            - name: AURA_TELEGRAM__CORE_URL
               value: "{{ .Release.Name }}-core.{{ .Release.Namespace }}.svc.cluster.local:50051"
-            - name: AURA_TG__NATS_URL
+            - name: AURA_TELEGRAM__NATS_URL
               value: "nats://{{ .Release.Name }}-nats.{{ .Release.Namespace }}.svc.cluster.local:4222"
-            - name: AURA_TG__LOG_LEVEL
+            - name: AURA_TELEGRAM__LOG_LEVEL
               value: "{{ .Values.telegram.env.LOG_LEVEL }}"
-            - name: AURA_TG__HEALTH_PORT
+            - name: AURA_TELEGRAM__HEALTH_PORT
               value: "{{ .Values.telegram.healthPort }}"
-            - name: AURA_TG__OTEL_EXPORTER_OTLP_ENDPOINT
+            - name: AURA_TELEGRAM__OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.monitoring.jaeger.collectorUrl | default (include "aura.jaeger.collectorUrl" .) | quote }}
             # --- Core metabolism settings (in-process HiveCell) ---
             - name: AURA_DATABASE__URL
