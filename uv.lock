@@ -2765,22 +2765,19 @@ version = "0.1.0"
 source = { virtual = "synapses/telegram-bot" }
 dependencies = [
     { name = "aiogram" },
+    { name = "aiohttp" },
     { name = "aura-core" },
     { name = "betterproto" },
-    { name = "core" },
-    { name = "grpcio" },
     { name = "nats-py" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-sdk" },
-    { name = "protobuf" },
     { name = "pydantic-settings" },
     { name = "structlog" },
 ]
 
 [package.dev-dependencies]
 dev = [
-    { name = "grpcio-tools" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-mock" },
@@ -2789,22 +2786,19 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiogram", specifier = ">=3.17.0" },
+    { name = "aiohttp", specifier = ">=3.11.0" },
     { name = "aura-core", editable = "packages/aura-core" },
     { name = "betterproto", specifier = ">=2.0.0b7" },
-    { name = "core", editable = "core" },
-    { name = "grpcio", specifier = ">=1.70.0" },
     { name = "nats-py", specifier = ">=2.9.0" },
     { name = "opentelemetry-api", specifier = ">=1.24.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.24.0" },
     { name = "opentelemetry-sdk", specifier = ">=1.24.0" },
-    { name = "protobuf", specifier = ">=6.33.5" },
     { name = "pydantic-settings", specifier = ">=2.7.1" },
     { name = "structlog", specifier = ">=25.1.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "grpcio-tools", specifier = ">=1.70.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.23.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },

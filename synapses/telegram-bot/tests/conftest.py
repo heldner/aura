@@ -2,34 +2,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from aiogram import types
-from interfaces import NegotiationProvider, NegotiationResult, SearchResult
-
-
-class MockNegotiationProvider(NegotiationProvider):
-    def __init__(self):
-        self.search_results = []
-        self.negotiation_result = {}
-
-    async def search(self, query: str, limit: int = 5) -> list[SearchResult]:
-        return self.search_results
-
-    async def negotiate(self, item_id: str, bid: float) -> NegotiationResult:
-        return self.negotiation_result
 
 
 @pytest.fixture
-def mock_client():
-    return MockNegotiationProvider()
-
-
-@pytest.fixture
-def mock_metabolism(mock_client):
-    metabolism = AsyncMock()
-    metabolism.connector = MagicMock()
-    metabolism.connector.search_core = mock_client.search
-    metabolism.execute_negotiation = AsyncMock()
-    metabolism.execute_search = AsyncMock()
-    return metabolism
+def mock_adapter():
+    """Mock NatsAdapter for testing receptor without NATS."""
+    adapter = AsyncMock()
+    return adapter
 
 
 @pytest.fixture
