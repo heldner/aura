@@ -145,9 +145,12 @@ services:
       dockerfile: synapses/telegram-bot/Dockerfile
     restart: on-failure
     environment:
-      NATS_URL: ${NATS_URL}
-      AURA_TG__TOKEN: ${AURA_TG__TOKEN}
-      AURA_TG__CORE_URL: ${AURA_TG__CORE_URL}
+      AURA_TELEGRAM__NATS_URL: ${NATS_URL}
+      AURA_TELEGRAM__TOKEN: ${AURA_TG__TOKEN}
+      AURA_TELEGRAM__CORE_URL: ${AURA_TG__CORE_URL}
+      AURA_DATABASE__REDIS_URL: redis://redis:6379/0
+      AURA_DATABASE__URL: postgresql://user:password@db:5432/aura_db
+      AURA_LLM__API_KEY: ${MISTRAL_API_KEY}
     depends_on:
       core:
         condition: service_healthy

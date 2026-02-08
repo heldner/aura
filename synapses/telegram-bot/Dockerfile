@@ -53,5 +53,7 @@ WORKDIR /app/synapses/telegram-bot
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app/synapses/telegram-bot/src:/app/synapses/telegram-bot/src/proto
 
+EXPOSE 8080
+
 # Command to run the bot
 CMD ["python", "src/main.py"]
