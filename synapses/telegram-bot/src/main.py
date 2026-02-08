@@ -16,7 +16,8 @@ from translator import TelegramTranslator
 from config import Settings as CoreSettings
 
 # Setup logging
-level = getattr(logging, tg_settings.log_level.upper(), logging.INFO)
+DEBUG = os.getenv("DEBUG")
+level = logging.DEBUG if DEBUG else getattr(logging, tg_settings.log_level.upper(), logging.INFO)
 log_format = os.getenv("AURA_LOG_FORMAT", "json").lower()
 renderer = (
     structlog.dev.ConsoleRenderer()
@@ -39,10 +40,22 @@ async def main() -> None:
     logger.info(
         "starting_telegram_synapse", prefix=tg_settings.model_config.get("env_prefix")
     )
+    logger.debug(
+        "synapse_settings",
+        core_url=tg_settings.core_url,
+        nats_url=tg_settings.nats_url,
+        log_level=tg_settings.log_level,
+        negotiation_timeout=tg_settings.negotiation_timeout,
+        webhook_domain=tg_settings.webhook_domain,
+        otel_endpoint=tg_settings.otel_exporter_otlp_endpoint,
+        log_format=log_format,
+        debug=bool(DEBUG),
+    )
 
     # 1. Initialize NATS Bloodstream
     nc = None
     try:
+        logger.debug("connecting_to_nats", url=tg_settings.nats_url)
         nc = await nats.connect(
             tg_settings.nats_url,
             connect_timeout=5,
@@ -58,6 +71,7 @@ async def main() -> None:
     # 2. Initialize the "Cell" (Core Metabolism)
     # We load CoreSettings which will pick up AURA_ prefixed env vars
     core_config = CoreSettings()
+    logger.debug("core_settings_loaded", env_prefix=core_config.model_config.get("env_prefix"))
     cell = HiveCell(core_config)
     metabolism = await cell.build_organism()
     logger.info("metabolism_initialized_in_process")
@@ -65,18 +79,24 @@ async def main() -> None:
     # 3. Initialize Bot and Translator
     bot = Bot(token=tg_settings.token.get_secret_value())
     translator = TelegramTranslator()
+    logger.debug("bot_and_translator_initialized")
 
     # 4. Initialize Receptor (Inbound)
     receptor = TelegramReceptor(metabolism, translator)
+    logger.debug("receptor_initialized")
 
     # 5. Initialize Effector (Outbound)
     effector = None
     if nc:
         effector = TelegramEffector(nc, bot, translator)
+        logger.debug("effector_initialized")
+    else:
+        logger.debug("effector_skipped", reason="no_nats_connection")
 
     # 6. Setup Aiogram Dispatcher
     dp = Dispatcher()
     dp.include_router(receptor.router)
+    logger.debug("dispatcher_configured", routers=1)
 
     logger.info("synapse_ready", core_url=tg_settings.core_url)
 
@@ -96,17 +116,20 @@ async def main() -> None:
         logger.info("effector_task_started")
 
     # Start Bot Polling
+    logger.debug("starting_bot_polling")
     try:
         await dp.start_polling(bot)
     except Exception as e:
         logger.error("bot_polling_failed", error=str(e))
     finally:
+        logger.debug("shutting_down", active_tasks=len(tasks))
         health_state.bot_polling = False
         for task in tasks:
             task.cancel()
         if nc:
             await nc.close()
         await bot.session.close()
+        logger.debug("shutdown_complete")
         await health_runner.cleanup()
 
 
